@@ -23,5 +23,4 @@ Feature: Autoplay Mode
     Given the player has placed a bet of 50
     And autoplay is enabled
     When the player clicks the spin button
-    Then the balance should decrease after the first spin
-    And the balance should decrease again after autoplay triggers another spin
+    Then the wheel should complete 5 spins automatically
