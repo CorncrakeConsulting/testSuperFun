@@ -1,0 +1,51 @@
+{
+  "name": "super-fun-wheel-tests",
+  "version": "1.0.0",
+  "description": "Playwright test automation for the Super Fun Wheel casino game",
+  "main": "index.js",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "test:ui": "playwright test --ui",
+    "test:report": "playwright show-report",
+    "test:coverage": "playwright test --reporter=html,json --reporter=json-summary",
+    "test:unit": "playwright test tests/**/*.spec.ts --grep-invert \"@integration\"",
+    "test:cucumber": "cucumber-js tests/features/**/*.feature",
+    "test:cucumber:headed": "cucumber-js tests/features/**/*.feature --profile headed",
+    "test:cucumber:report": "cucumber-js tests/features/**/*.feature --format html:test-results/cucumber-report.html",
+    "test:cucumber:serial": "cucumber-js tests/features/**/*.feature --parallel 1",
+    "test:bdd": "npm run test:cucumber",
+    "install:browsers": "playwright install",
+    "lint": "eslint . --ext .ts,.js",
+    "lint:fix": "eslint . --ext .ts,.js --fix",
+    "lint:report": "eslint . --ext .ts,.js --format json --output-file eslint-report.json",
+    "quality:check": "npm run lint",
+    "sonar": "sonar-scanner",
+    "sonar:full": "npm run lint:report && sonar-scanner"
+  },
+  "keywords": [
+    "playwright",
+    "testing",
+    "automation",
+    "casino",
+    "game"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@cucumber/cucumber": "^12.2.0",
+    "@playwright/test": "^1.40.0",
+    "@types/node": "^20.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.46.2",
+    "@typescript-eslint/parser": "^8.46.2",
+    "eslint": "^9.38.0",
+    "eslint-plugin-playwright": "^2.2.2",
+    "eslint-plugin-sonarjs": "^3.0.5",
+    "eslint-plugin-unicorn": "^61.0.2",
+    "sonarqube-scanner": "^4.3.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.0.0",
+    "typescript-eslint": "^8.46.2"
+  }
+}

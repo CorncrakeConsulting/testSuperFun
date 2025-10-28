@@ -1,0 +1,11 @@
+node_modules/
+dist/
+test-results/
+playwright-report/
+playwright/.cache/
+.env
+.env.local
+.DS_Store
+*.log
+coverage/
+.test-run-folder
