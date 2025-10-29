@@ -5,6 +5,7 @@
  */
 
 import { DistributionData } from "./DistributionTestingLogic";
+import { TestLogger } from "../services/TestLogger";
 
 class SharedDistributionStore {
   private static instance: SharedDistributionStore;
@@ -26,7 +27,7 @@ class SharedDistributionStore {
   public setDistributionData(data: DistributionData, featureTag: string): void {
     this.distributionData = data;
     this.featureTag = featureTag;
-    console.log(`📦 Stored distribution data for feature: ${featureTag}`);
+    TestLogger.debug(`📦 Stored distribution data for feature: ${featureTag}`);
   }
 
   /**
@@ -34,10 +35,10 @@ class SharedDistributionStore {
    */
   public getDistributionData(featureTag: string): DistributionData | null {
     if (this.featureTag === featureTag && this.distributionData) {
-      console.log(`📦 Retrieved stored distribution data for feature: ${featureTag}`);
+      TestLogger.debug(`📦 Retrieved stored distribution data for feature: ${featureTag}`);
       return this.distributionData;
     }
-    console.log(`📦 No stored data found for feature: ${featureTag}`);
+    TestLogger.debug(`📦 No stored data found for feature: ${featureTag}`);
     return null;
   }
 
@@ -54,7 +55,7 @@ class SharedDistributionStore {
   public clear(): void {
     this.distributionData = null;
     this.featureTag = null;
-    console.log(`📦 Cleared stored distribution data`);
+    TestLogger.debug(`📦 Cleared stored distribution data`);
   }
 
   /**

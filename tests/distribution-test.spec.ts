@@ -20,13 +20,17 @@ test.describe("Wheel Distribution Testing", () => {
     console.log("\n💰 Testing RTP (Return to Player) over 1000 spins...\n");
 
     for (let i = 0; i < totalSpins; i++) {
-      await gamePage.setPlayerData({ balance: 100000, bet: betAmount, win: 0 });
-      await gamePage.setWheelLandingIndex(undefined); // Random
+      await gamePage.testHooks.setPlayerData({
+        balance: 100000,
+        bet: betAmount,
+        win: 0,
+      });
+      await gamePage.testHooks.setWheelLandingIndex(undefined); // Random
 
       await gamePage.spin();
-      await gamePage.waitForWheelToStop();
+      await gamePage.state.waitForWheelToStop();
 
-      const win = await gamePage.getWin();
+      const win = await gamePage.data.getWin();
       totalWagered += betAmount;
       totalWon += win;
 
@@ -67,7 +71,7 @@ test.describe("Wheel Distribution Testing", () => {
     await gamePage.enableQuickSpin();
 
     const totalSpins = 500;
-    const sliceCount = await gamePage.getSliceCount();
+    const sliceCount = await gamePage.state.getSliceCount();
     const biasMargin = 0.1;
     // Initialize slice counters as Record<number, number> with zero values
     const distribution: Record<number, number> = Object.fromEntries(
@@ -77,21 +81,29 @@ test.describe("Wheel Distribution Testing", () => {
     // Get slice configurations
     const sliceConfig: Record<number, number> = {};
     for (let i = 0; i < sliceCount; i++) {
-      await gamePage.setPlayerData({ balance: 1000, bet: 10, win: 0 });
-      await gamePage.setWheelLandingIndex(i);
+      await gamePage.testHooks.setPlayerData({
+        balance: 1000,
+        bet: 10,
+        win: 0,
+      });
+      await gamePage.testHooks.setWheelLandingIndex(i);
       await gamePage.spin();
-      await gamePage.waitForWheelToStop();
-      sliceConfig[i] = await gamePage.getWin();
+      await gamePage.state.waitForWheelToStop();
+      sliceConfig[i] = await gamePage.data.getWin();
     }
 
     // Run spins
     for (let i = 0; i < totalSpins; i++) {
-      await gamePage.setPlayerData({ balance: 10000, bet: 10, win: 0 });
-      await gamePage.setWheelLandingIndex(undefined);
+      await gamePage.testHooks.setPlayerData({
+        balance: 10000,
+        bet: 10,
+        win: 0,
+      });
+      await gamePage.testHooks.setWheelLandingIndex(undefined);
       await gamePage.spin();
-      await gamePage.waitForWheelToStop();
+      await gamePage.state.waitForWheelToStop();
 
-      const win = await gamePage.getWin();
+      const win = await gamePage.data.getWin();
       for (let slice = 0; slice < sliceCount; slice++) {
         if (sliceConfig[slice] === win) {
           distribution[slice]++;

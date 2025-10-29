@@ -19,7 +19,10 @@ export interface SliceValidationResult {
 }
 
 export class BalanceTestingLogic {
-  constructor(private readonly page: Page, private readonly wheelGamePage: WheelGamePage) {}
+  constructor(
+    private readonly page: Page,
+    private readonly wheelGamePage: WheelGamePage
+  ) {}
 
   private async getSliceConfiguration(sliceIndex: number) {
     return await this.page.evaluate((idx) => {
@@ -44,17 +47,17 @@ export class BalanceTestingLogic {
     configuredMultiplier: number,
     errors: string[]
   ): void {
-    // Validation 1: Check if sprite multiplier matches expected
+    // Validation 1: Check if sprite multiplier matches expected from cuck table
     if (actualSpriteMultiplier !== expectedSpriteMultiplier) {
       errors.push(
-        `Slice ${sliceIndex}: Expected sprite ${expectedSpriteMultiplier}x but found ${actualSpriteMultiplier}x`
+        `Slice ${sliceIndex}: Defined expected sprite ${expectedSpriteMultiplier}x but found ${actualSpriteMultiplier}x`
       );
     }
 
-    // Validation 2: Check if sprite matches configured multiplier (the main bug check)
+    // Validation 2: Check if sprite matches configured multiplier
     if (actualSpriteMultiplier !== configuredMultiplier) {
       errors.push(
-        `Slice ${sliceIndex}: Sprite shows ${actualSpriteMultiplier}x but configured as ${configuredMultiplier}x`
+        `Slice ${sliceIndex}: Sprite incorrectly configured - shows ${actualSpriteMultiplier}x but configured as ${configuredMultiplier}x`
       );
     }
   }

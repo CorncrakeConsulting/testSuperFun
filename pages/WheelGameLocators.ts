@@ -20,7 +20,7 @@ export class WheelGameLocators {
   readonly winDialog: Locator;
 
   constructor(page: Page) {
-    // Console controls
+    // Console controls - use ID throughout
     this.balanceDisplay = page.locator("#balance");
     this.betDisplay = page.locator("#bet-button");
     this.winDisplay = page.locator("#win");

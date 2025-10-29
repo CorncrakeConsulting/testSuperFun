@@ -1,4 +1,5 @@
 import { Page } from "@playwright/test";
+import { TestLogger } from "../services/TestLogger";
 
 /**
  * Test Hooks for the Wheel Game
@@ -53,7 +54,13 @@ export class WheelGameTestHooks {
       }
     }, index);
 
-    console.log(`Test hook result:`, result);
+    TestLogger.debug(`Test hook result:`, result);
+    
+    if (!result.success) {
+      const errorMsg = `Test hook failed: ${result.error}`;
+      console.error(errorMsg);
+      TestLogger.error(errorMsg);
+    }
   }
   /**
    * Set the wheel to land on a slice with the specified multiplier

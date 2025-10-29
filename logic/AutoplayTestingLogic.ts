@@ -2,6 +2,7 @@
 import { Page } from "@playwright/test";
 import { WheelGamePage } from "../pages/WheelGamePage";
 import { WheelState } from "../types/WheelState";
+import { TestLogger } from "../services/TestLogger";
 
 /**
  * Business logic for autoplay testing
@@ -27,7 +28,7 @@ export class AutoplayTestingLogic {
     const startTime = Date.now();
     const maxWaitTime = spinCount * 8000; // 8 seconds per spin
     
-    console.log(`🎰 Waiting for ${spinCount} autoplay spins...`);
+    TestLogger.spin(`Waiting for ${spinCount} autoplay spins...`);
     
     while (completedSpins < spinCount && (Date.now() - startTime) < maxWaitTime) {
       await this.page.waitForTimeout(50); // Fast polling
@@ -41,7 +42,7 @@ export class AutoplayTestingLogic {
       if ((previousState === WheelState.Spinning || previousState === WheelState.Resolving) && 
           (currentState === WheelState.Idle || currentState === WheelState.Resolved || currentState === WheelState.Breathe)) {
         completedSpins++;
-        console.log(`✅ Spin ${completedSpins}/${spinCount} completed (${previousState} → ${currentState})`);
+        TestLogger.success(`Spin ${completedSpins}/${spinCount} completed (${previousState} → ${currentState})`);
       }
       
       previousState = currentState;
@@ -54,6 +55,6 @@ export class AutoplayTestingLogic {
       );
     }
     
-    console.log(`✅ All ${spinCount} autoplay spins completed successfully`);
+    TestLogger.success(`All ${spinCount} autoplay spins completed successfully`);
   }
 }

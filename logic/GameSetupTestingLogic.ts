@@ -36,10 +36,4 @@ export class GameSetupTestingLogic {
   async disableQuickSpin(): Promise<void> {
     await this.wheelGamePage.disableQuickSpin();
   }
-
-  async setWheelToLandOnWinningSlice(multiplier: number): Promise<void> {
-    // Find a slice with the specified multiplier from wheel data
-    // For now, use slice index 2 which typically has a winning multiplier
-    await this.wheelGamePage.testHooks.setWheelLandingIndex(2);
-  }
 }

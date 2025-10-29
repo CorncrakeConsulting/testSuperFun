@@ -4,7 +4,9 @@
  */
 
 import { WheelGamePage } from "../pages/WheelGamePage";
+import { TestLogger } from "../services/TestLogger";
 import { CustomWorld } from "../tests/support/world";
+import { sharedDistributionStore } from "./SharedDistributionStore";
 
 export interface DistributionData {
   distribution: Record<number, number>;
@@ -21,6 +23,7 @@ export class DistributionTestingLogic {
   private distributionData: DistributionData;
   private readonly world: CustomWorld;
   private readonly NUM_SLICES = 12; // Wheel has 12 slices
+  private static readonly FEATURE_TAG = "distribution"; // Tag to identify this feature's data
 
   constructor(world: CustomWorld) {
     this.world = world;
@@ -40,6 +43,41 @@ export class DistributionTestingLogic {
 
   setDistributionData(data: DistributionData): void {
     this.distributionData = data;
+  }
+
+  /**
+   * Store current distribution data for cross-scenario analysis
+   */
+  public storeDistributionDataForAnalysis(): void {
+    if (this.distributionData.totalSpins === 0) {
+      throw new Error("No spin data was collected");
+    }
+
+    sharedDistributionStore.setDistributionData(
+      this.distributionData,
+      DistributionTestingLogic.FEATURE_TAG
+    );
+    console.log(
+      `✅ Successfully stored data from ${this.distributionData.totalSpins} spins for validation scenarios`
+    );
+  }
+
+  /**
+   * Load previously stored distribution data for analysis
+   */
+  public loadStoredDistributionData(): void {
+    const data = sharedDistributionStore.getDistributionData(
+      DistributionTestingLogic.FEATURE_TAG
+    );
+
+    if (!data) {
+      throw new Error(
+        'No distribution data available. Make sure the "Collect distribution data" scenario runs first.'
+      );
+    }
+
+    this.setDistributionData(data);
+    console.log(`✅ Loaded distribution data: ${data.totalSpins} spins`);
   }
 
   /**
@@ -114,7 +152,7 @@ export class DistributionTestingLogic {
    * Uses quick spin for faster identification
    */
   public async identifySliceConfigurations(): Promise<void> {
-    console.log(
+    TestLogger.info(
       `📊 Identifying slice configurations for ${this.NUM_SLICES} slices (with quick spin)...`
     );
 
@@ -135,7 +173,7 @@ export class DistributionTestingLogic {
       const winAmount = await this.wheelGamePage.data.getWin();
       this.distributionData.sliceConfig[sliceIndex] = winAmount;
       this.distributionData.sliceMultipliers[sliceIndex] = winAmount / testBet;
-      console.log(
+      TestLogger.debug(
         `   Slice ${sliceIndex}: pays ${winAmount} (${this.distributionData.sliceMultipliers[sliceIndex]}x)`
       );
     }

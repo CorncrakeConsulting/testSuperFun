@@ -11,15 +11,15 @@ test.describe("Wheel Mechanics and Win Scenarios", () => {
 
   test.describe("Basic Spinning Mechanics", () => {
     test("should spin wheel when spin button is clicked", async () => {
-      const initialBalance = await gamePage.getBalance();
-      const betAmount = await gamePage.getBet();
+      const initialBalance = await gamePage.data.getBalance();
+      const betAmount = await gamePage.data.getBet();
 
       await gamePage.spin();
-      await gamePage.waitForWheelToStop();
+      await gamePage.state.waitForWheelToStop();
 
       // Verify balance calculation: oldBalance - wager + winnings = newBalance
-      const newBalance = await gamePage.getBalance();
-      const winnings = await gamePage.getWin();
+      const newBalance = await gamePage.data.getBalance();
+      const winnings = await gamePage.data.getWin();
       const expectedBalance = initialBalance - betAmount + winnings;
 
       expect(newBalance).toBe(expectedBalance);
@@ -29,7 +29,7 @@ test.describe("Wheel Mechanics and Win Scenarios", () => {
       const startTime = Date.now();
 
       await gamePage.spin();
-      await gamePage.waitForWheelToStop();
+      await gamePage.state.waitForWheelToStop();
 
       const endTime = Date.now();
       const spinDuration = endTime - startTime;
@@ -47,10 +47,10 @@ test.describe("Wheel Mechanics and Win Scenarios", () => {
       await gamePage.spin();
 
       // Wait for wheel to stop
-      await gamePage.waitForWheelToStop();
+      await gamePage.state.waitForWheelToStop();
 
       // Should only deduct bet once
-      const balance = await gamePage.getBalance();
+      const balance = await gamePage.data.getBalance();
       expect(balance).toBe(990); // 1000 - 10 (one bet only)
     });
   });
@@ -59,15 +59,15 @@ test.describe("Wheel Mechanics and Win Scenarios", () => {
     test("should land on specified index when using test hook", async () => {
       // Set wheel to land on specific slice
       const targetIndex = 0;
-      await gamePage.setWheelLandingIndex(targetIndex);
+      await gamePage.testHooks.setWheelLandingIndex(targetIndex);
 
       await gamePage.spin();
-      await gamePage.waitForWheelToStop();
+      await gamePage.state.waitForWheelToStop();
 
       // Verify the wheel landed where expected
       // Note: This test validates the test hook functionality
       // The actual win amount depends on the slice configuration
-      const win = await gamePage.getWin();
+      const win = await gamePage.data.getWin();
       expect(win).toBeGreaterThanOrEqual(0);
     });
 
@@ -80,13 +80,17 @@ test.describe("Wheel Mechanics and Win Scenarios", () => {
 
       for (const testCase of testCases) {
         // Reset game state
-        await gamePage.setPlayerData({ balance: 1000, bet: 10, win: 0 });
-        await gamePage.setWheelLandingIndex(testCase.sliceIndex);
+        await gamePage.testHooks.setPlayerData({
+          balance: 1000,
+          bet: 10,
+          win: 0,
+        });
+        await gamePage.testHooks.setWheelLandingIndex(testCase.sliceIndex);
 
         await gamePage.spin();
-        await gamePage.waitForWheelToStop();
+        await gamePage.state.waitForWheelToStop();
 
-        const win = await gamePage.getWin();
+        const win = await gamePage.data.getWin();
 
         // Verify win is calculated (could be 0 for non-winning slices)
         expect(win).toBeGreaterThanOrEqual(0);
@@ -98,17 +102,21 @@ test.describe("Wheel Mechanics and Win Scenarios", () => {
 
     test("should handle winning scenario correctly", async () => {
       // Set up a winning scenario
-      await gamePage.setPlayerData({ balance: 1000, bet: 50 });
+      await gamePage.testHooks.setPlayerData({ balance: 1000, bet: 50 });
 
       // Test multiple slices to find a winning one
       for (let sliceIndex = 0; sliceIndex < 8; sliceIndex++) {
-        await gamePage.setPlayerData({ balance: 1000, bet: 50, win: 0 });
-        await gamePage.setWheelLandingIndex(sliceIndex);
+        await gamePage.testHooks.setPlayerData({
+          balance: 1000,
+          bet: 50,
+          win: 0,
+        });
+        await gamePage.testHooks.setWheelLandingIndex(sliceIndex);
 
         await gamePage.spin();
-        await gamePage.waitForWheelToStop();
+        await gamePage.state.waitForWheelToStop();
 
-        const win = await gamePage.getWin();
+        const win = await gamePage.data.getWin();
 
         if (win > 0) {
           // Found a winning slice
@@ -123,56 +131,56 @@ test.describe("Wheel Mechanics and Win Scenarios", () => {
   test.describe("Random Spin Testing", () => {
     test("should handle random spins without errors", async () => {
       // Clear any forced landing index
-      await gamePage.setWheelLandingIndex(undefined);
+      await gamePage.testHooks.setWheelLandingIndex(undefined);
 
       for (let i = 0; i < 5; i++) {
-        const initialBalance = await gamePage.getBalance();
-        const betAmount = await gamePage.getBet();
+        const initialBalance = await gamePage.data.getBalance();
+        const betAmount = await gamePage.data.getBet();
 
         await gamePage.spin();
-        await gamePage.waitForWheelToStop();
+        await gamePage.state.waitForWheelToStop();
 
         // Verify balance was deducted
-        const newBalance = await gamePage.getBalance();
+        const newBalance = await gamePage.data.getBalance();
         expect(newBalance).toBe(initialBalance - betAmount);
 
         // Reset for next iteration if balance gets too low
         if (newBalance < betAmount) {
-          await gamePage.setPlayerData({ balance: 1000 });
+          await gamePage.testHooks.setPlayerData({ balance: 1000 });
         }
       }
     });
 
     test("should maintain game state consistency across multiple spins", async () => {
-      await gamePage.setPlayerData({ balance: 500, bet: 25 });
+      await gamePage.testHooks.setPlayerData({ balance: 500, bet: 25 });
 
       let currentBalance = 500;
 
       for (let spin = 0; spin < 3; spin++) {
         await gamePage.spin();
-        await gamePage.waitForWheelToStop();
+        await gamePage.state.waitForWheelToStop();
 
-        const newBalance = await gamePage.getBalance();
-        const win = await gamePage.getWin();
+        const newBalance = await gamePage.data.getBalance();
+        const win = await gamePage.data.getWin();
 
         // Balance should be previous balance - bet + win
         expect(newBalance).toBe(currentBalance - 25 + win);
         currentBalance = newBalance;
 
         // Reset win for next spin
-        await gamePage.setPlayerData({ win: 0 });
+        await gamePage.testHooks.setPlayerData({ win: 0 });
       }
     });
   });
 
   test.describe("Edge Cases", () => {
     test("should handle low balance scenario", async () => {
-      await gamePage.setPlayerData({ balance: 15, bet: 10 });
+      await gamePage.testHooks.setPlayerData({ balance: 15, bet: 10 });
 
       await gamePage.spin();
-      await gamePage.waitForWheelToStop();
+      await gamePage.state.waitForWheelToStop();
 
-      const finalBalance = await gamePage.getBalance();
+      const finalBalance = await gamePage.data.getBalance();
       expect(finalBalance).toBe(5);
 
       // Should not allow another spin with insufficient balance
@@ -180,26 +188,26 @@ test.describe("Wheel Mechanics and Win Scenarios", () => {
     });
 
     test("should handle maximum bet scenario", async () => {
-      await gamePage.setPlayerData({ balance: 10000, bet: 1000 });
+      await gamePage.testHooks.setPlayerData({ balance: 10000, bet: 1000 });
 
       await gamePage.spin();
-      await gamePage.waitForWheelToStop();
+      await gamePage.state.waitForWheelToStop();
 
-      const finalBalance = await gamePage.getBalance();
+      const finalBalance = await gamePage.data.getBalance();
       expect(finalBalance).toBe(9000); // 10000 - 1000
     });
 
     test("should reset wheel state after completed spin", async () => {
       await gamePage.spin();
-      await gamePage.waitForWheelToStop();
+      await gamePage.state.waitForWheelToStop();
 
       // Should be able to spin again
-      const balanceAfterFirst = await gamePage.getBalance();
+      const balanceAfterFirst = await gamePage.data.getBalance();
 
       await gamePage.spin();
-      await gamePage.waitForWheelToStop();
+      await gamePage.state.waitForWheelToStop();
 
-      const balanceAfterSecond = await gamePage.getBalance();
+      const balanceAfterSecond = await gamePage.data.getBalance();
       expect(balanceAfterSecond).toBe(balanceAfterFirst - 10);
     });
   });

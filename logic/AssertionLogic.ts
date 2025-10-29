@@ -1,5 +1,6 @@
 import { Page, expect } from "@playwright/test";
 import { WheelGamePage } from "../pages/WheelGamePage";
+import { TestLogger } from "../services/TestLogger";
 
 export interface MultiplierTestResult {
   sliceIndex?: number;
@@ -15,10 +16,8 @@ export interface MultiplierTestResult {
 }
 
 export class AssertionLogic {
-  private normalSpinBaseline?: number;
-  private quickSpinBaseline?: number;
 
-  constructor(private page: Page, private wheelGamePage: WheelGamePage) {}
+  constructor(private readonly page: Page, private readonly wheelGamePage: WheelGamePage) {}
 
   async assertBalanceUpdated(initialBalance?: number): Promise<void> {
     const currentBalance = await this.wheelGamePage.data.getBalance();
@@ -104,7 +103,7 @@ export class AssertionLogic {
     await this.wheelGamePage.state.waitForWheelToStop();
     const quickSpinDuration = Date.now() - startTime;
 
-    console.log(`Quick spin duration: ${quickSpinDuration}ms`);
+    TestLogger.debug(`Quick spin duration: ${quickSpinDuration}ms`);
     // Quick spin should complete in approximately 2.5-4 seconds (with 3.5x speed multiplier)
     expect(quickSpinDuration).toBeLessThan(4500);
     expect(quickSpinDuration).toBeGreaterThan(1500);
@@ -115,7 +114,7 @@ export class AssertionLogic {
     await this.wheelGamePage.state.waitForWheelToStop();
     const normalSpinDuration = Date.now() - startTime;
 
-    console.log(`Normal spin duration: ${normalSpinDuration}ms`);
+    TestLogger.debug(`Normal spin duration: ${normalSpinDuration}ms`);
     // Normal spin should take 8-11 seconds (platform dependent but generally 9-10s)
     expect(normalSpinDuration).toBeGreaterThanOrEqual(7000);
   }
@@ -128,7 +127,7 @@ export class AssertionLogic {
       await this.wheelGamePage.state.waitForWheelToStop();
       const duration = Date.now() - startTime;
       durations.push(duration);
-      console.log(`Spin ${i + 1} duration: ${duration}ms`);
+      TestLogger.debug(`Spin ${i + 1} duration: ${duration}ms`);
 
       // If not the last spin, wait a bit and spin again
       if (i < spinCount - 1) {
@@ -148,7 +147,7 @@ export class AssertionLogic {
     await this.wheelGamePage.state.waitForWheelToStop();
     const duration = Date.now() - startTime;
 
-    console.log(
+    TestLogger.debug(
       `Normal spin duration: ${duration}ms (max allowed: ${maxDuration}ms)`
     );
     expect(duration).toBeLessThan(maxDuration);
@@ -159,7 +158,7 @@ export class AssertionLogic {
     await this.wheelGamePage.state.waitForWheelToStop();
     const duration = Date.now() - startTime;
 
-    console.log(
+    TestLogger.debug(
       `Quick spin duration: ${duration}ms (max allowed: ${maxDuration}ms)`
     );
     expect(duration).toBeLessThan(maxDuration);
@@ -176,7 +175,7 @@ export class AssertionLogic {
       await this.wheelGamePage.state.waitForWheelToStop();
       const duration = Date.now() - startTime;
       durations.push(duration);
-      console.log(`Quick spin ${i + 1} duration: ${duration}ms`);
+      TestLogger.debug(`Quick spin ${i + 1} duration: ${duration}ms`);
 
       if (i < spinCount - 1) {
         await this.page.waitForTimeout(1000);
@@ -191,7 +190,7 @@ export class AssertionLogic {
 
     // If we have a baseline, verify consistency (within 1.5x of baseline)
     if (baseline) {
-      console.log(`Baseline: ${baseline}ms`);
+      TestLogger.debug(`Baseline: ${baseline}ms`);
       for (const duration of durations) {
         expect(duration).toBeLessThanOrEqual(baseline * 1.5);
       }
@@ -206,10 +205,10 @@ export class AssertionLogic {
     await this.wheelGamePage.state.waitForWheelToStop();
     const duration = Date.now() - startTime;
 
-    console.log(`Spin duration after disabling quick spin: ${duration}ms`);
+    TestLogger.debug(`Spin duration after disabling quick spin: ${duration}ms`);
 
     if (baseline) {
-      console.log(`Normal spin baseline: ${baseline}ms`);
+      TestLogger.debug(`Normal spin baseline: ${baseline}ms`);
       // Should be within 30% of the calibrated normal baseline
       const lowerBound = baseline * 0.7;
       const upperBound = baseline * 1.3;
@@ -246,13 +245,13 @@ export class AssertionLogic {
       const actualBalanceChange =
         (balanceAfterSpin ?? 0) - (balanceBeforeSpin ?? 0) + (bet ?? 0);
 
-      console.log(`\nSlice ${sliceIndex}: ${sprite}`);
-      console.log(`  Sprite shows: ${expectedMultiplier}x`);
-      console.log(`  Config has: ${configuredMultiplier}x`);
-      console.log(`  Expected win: ${expectedWin}`);
-      console.log(`  Actual win (display): ${actualWin}`);
-      console.log(`  Actual win (balance): ${actualBalanceChange}`);
-      console.log(
+      TestLogger.debug(`\nSlice ${sliceIndex}: ${sprite}`);
+      TestLogger.debug(`  Sprite shows: ${expectedMultiplier}x`);
+      TestLogger.debug(`  Config has: ${configuredMultiplier}x`);
+      TestLogger.debug(`  Expected win: ${expectedWin}`);
+      TestLogger.debug(`  Actual win (display): ${actualWin}`);
+      TestLogger.debug(`  Actual win (balance): ${actualBalanceChange}`);
+      TestLogger.debug(
         `  Balance: ${balanceBeforeSpin} -> ${balanceAfterSpin} (bet: ${bet})`
       );
 
@@ -315,7 +314,7 @@ export class AssertionLogic {
 
       if (spriteMultiplier !== slice.winMultiplier) {
         errors.push(
-          `Slice ${slice.index}: Sprite shows "${spriteMatch[1]}x" but winMultiplier is ${slice.winMultiplier}`
+          `Slice ${slice.index}: Sprite shows "${spriteMatch[1]}x" but win Multiplier is ${slice.winMultiplier}`
         );
       }
     }

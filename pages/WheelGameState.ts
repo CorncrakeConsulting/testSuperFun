@@ -16,13 +16,16 @@ export class WheelGameState {
    * Check if the wheel is currently spinning
    */
   async isSpinning(): Promise<boolean> {
-    return await this.page.evaluate(() => {
-      const game = (globalThis as any).game;
-      if (!game?.wheel?._state) return false;
-
-      const state = game.wheel._state;
-      return state === WheelState.Spinning || state === WheelState.Resolving;
-    });
+    return await this.page.evaluate(
+      ([spinning, resolving]) => {
+        const game = (globalThis as any).game;
+        //no state => not spinning
+        if (!game?.wheel?._state) return false;
+        const state = game.wheel._state;
+        return state === spinning || state === resolving;
+      },
+       [WheelState.Spinning, WheelState.Resolving]
+      );
   }
 
   /**
@@ -30,10 +33,11 @@ export class WheelGameState {
    */
   async waitForWheelToStartSpinning(timeout: number = 5000): Promise<void> {
     await this.page.waitForFunction(
-      () => {
+      (spinning) => {
         const game = (globalThis as any).game;
-        return game?.wheel?._state === WheelState.Spinning;
+        return game?.wheel?._state === spinning;
       },
+      WheelState.Spinning,
       { timeout }
     );
   }
@@ -43,11 +47,12 @@ export class WheelGameState {
    */
   async waitForSpinComplete(timeout: number = 10000): Promise<void> {
     await this.page.waitForFunction(
-      () => {
+      ([resolved, idle]) => {
         const game = (globalThis as any).game;
         const state = game?.wheel?._state;
-        return state === WheelState.Resolved || state === WheelState.Idle;
+        return state === resolved || state === idle;
       },
+      [WheelState.Resolved, WheelState.Idle],
       { timeout }
     );
   }
@@ -88,6 +93,10 @@ export class WheelGameState {
   /**
    * Get the index of the slice the wheel landed on
    */
+  /*
+    When the spin completes, there's no stored property for "which slice did we land on". 
+    So tests must reverse-engineer it from the rotation angle.
+  */
   async getLandedSliceIndex(): Promise<number> {
     return await this.page.evaluate(() => {
       const game = (globalThis as any).game;

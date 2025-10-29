@@ -11,48 +11,48 @@ test.describe("Test Hooks Integration", () => {
 
   test.describe("setPlayerData Hook", () => {
     test("should update balance using setPlayerData", async () => {
-      await gamePage.setPlayerData({ balance: 2000 });
+      await gamePage.testHooks.setPlayerData({ balance: 2000 });
 
-      const balance = await gamePage.getBalance();
+      const balance = await gamePage.data.getBalance();
       expect(balance).toBe(2000);
     });
 
     test("should update bet using setPlayerData", async () => {
-      await gamePage.setPlayerData({ bet: 100 });
+      await gamePage.testHooks.setPlayerData({ bet: 100 });
 
-      const bet = await gamePage.getBet();
+      const bet = await gamePage.data.getBet();
       expect(bet).toBe(100);
     });
 
     test("should update multiple properties simultaneously", async () => {
-      await gamePage.setPlayerData({
+      await gamePage.testHooks.setPlayerData({
         balance: 1500,
         bet: 75,
         win: 50,
       });
 
-      expect(await gamePage.getBalance()).toBe(1500);
-      expect(await gamePage.getBet()).toBe(75);
-      expect(await gamePage.getWin()).toBe(50);
+      expect(await gamePage.data.getBalance()).toBe(1500);
+      expect(await gamePage.data.getBet()).toBe(75);
+      expect(await gamePage.data.getWin()).toBe(50);
     });
 
     test("should handle autoplay setting", async () => {
-      await gamePage.setPlayerData({ autoplay: true });
+      await gamePage.testHooks.setPlayerData({ autoplay: true });
 
-      const isAutoplayEnabled = await gamePage.isAutoplayEnabled();
+      const isAutoplayEnabled = await gamePage.data.isAutoplayEnabled();
       expect(isAutoplayEnabled).toBe(true);
     });
 
     test("should preserve existing values when updating partial data", async () => {
       // Set initial values
-      await gamePage.setPlayerData({ balance: 500, bet: 25 });
+      await gamePage.testHooks.setPlayerData({ balance: 500, bet: 25 });
 
       // Update only balance
-      await gamePage.setPlayerData({ balance: 800 });
+      await gamePage.testHooks.setPlayerData({ balance: 800 });
 
       // Bet should remain unchanged
-      expect(await gamePage.getBalance()).toBe(800);
-      expect(await gamePage.getBet()).toBe(25);
+      expect(await gamePage.data.getBalance()).toBe(800);
+      expect(await gamePage.data.getBet()).toBe(25);
     });
   });
 
@@ -60,14 +60,18 @@ test.describe("Test Hooks Integration", () => {
     test("should force wheel to land on specific index", async () => {
       // Test each slice index
       for (let index = 0; index < 8; index++) {
-        await gamePage.setPlayerData({ balance: 1000, bet: 10, win: 0 });
-        await gamePage.setWheelLandingIndex(index);
+        await gamePage.testHooks.setPlayerData({
+          balance: 1000,
+          bet: 10,
+          win: 0,
+        });
+        await gamePage.testHooks.setWheelLandingIndex(index);
 
         await gamePage.spin();
-        await gamePage.waitForWheelToStop();
+        await gamePage.state.waitForWheelToStop();
 
         // Verify the spin completed successfully
-        const newBalance = await gamePage.getBalance();
+        const newBalance = await gamePage.data.getBalance();
         expect(newBalance).toBe(990); // Balance should be deducted
 
         console.log(`Tested slice index: ${index}`);
@@ -76,47 +80,47 @@ test.describe("Test Hooks Integration", () => {
 
     test("should clear forced landing when set to undefined", async () => {
       // First set a specific index
-      await gamePage.setWheelLandingIndex(0);
+      await gamePage.testHooks.setWheelLandingIndex(0);
 
       // Then clear it
-      await gamePage.setWheelLandingIndex(undefined);
+      await gamePage.testHooks.setWheelLandingIndex(undefined);
 
       // Spin should now be random
       await gamePage.spin();
-      await gamePage.waitForWheelToStop();
+      await gamePage.state.waitForWheelToStop();
 
       // Should complete successfully without errors
-      const balance = await gamePage.getBalance();
+      const balance = await gamePage.data.getBalance();
       expect(balance).toBe(990);
     });
 
     test("should handle invalid slice indices gracefully", async () => {
       // Test with out-of-bounds index
-      await gamePage.setWheelLandingIndex(999);
+      await gamePage.testHooks.setWheelLandingIndex(999);
 
       await gamePage.spin();
-      await gamePage.waitForWheelToStop();
+      await gamePage.state.waitForWheelToStop();
 
       // Should not crash the game
-      const balance = await gamePage.getBalance();
+      const balance = await gamePage.data.getBalance();
       expect(balance).toBe(990);
     });
 
     test("should support negative indices", async () => {
-      await gamePage.setWheelLandingIndex(-1);
+      await gamePage.testHooks.setWheelLandingIndex(-1);
 
       await gamePage.spin();
-      await gamePage.waitForWheelToStop();
+      await gamePage.state.waitForWheelToStop();
 
       // Should handle gracefully
-      const balance = await gamePage.getBalance();
+      const balance = await gamePage.data.getBalance();
       expect(balance).toBe(990);
     });
   });
 
   test.describe("Game Object Access", () => {
     test("should provide access to game instance", async () => {
-      const gameInstance = await gamePage.getGameInstance();
+      const gameInstance = await gamePage.state.getGameInstance();
 
       expect(gameInstance).toBeTruthy();
       expect(typeof gameInstance).toBe("object");
@@ -152,50 +156,50 @@ test.describe("Test Hooks Integration", () => {
   test.describe("Combined Hook Usage", () => {
     test("should work with both hooks in sequence", async () => {
       // Set custom player data
-      await gamePage.setPlayerData({ balance: 2000, bet: 50 });
+      await gamePage.testHooks.setPlayerData({ balance: 2000, bet: 50 });
 
       // Force specific wheel landing
-      await gamePage.setWheelLandingIndex(0);
+      await gamePage.testHooks.setWheelLandingIndex(0);
 
       await gamePage.spin();
-      await gamePage.waitForWheelToStop();
+      await gamePage.state.waitForWheelToStop();
 
       // Verify both hooks worked
-      const balance = await gamePage.getBalance();
+      const balance = await gamePage.data.getBalance();
       expect(balance).toBe(1950); // 2000 - 50
     });
 
     test("should handle rapid hook calls", async () => {
       // Rapidly change settings
-      await gamePage.setPlayerData({ balance: 1000 });
-      await gamePage.setWheelLandingIndex(1);
-      await gamePage.setPlayerData({ bet: 20 });
-      await gamePage.setWheelLandingIndex(2);
+      await gamePage.testHooks.setPlayerData({ balance: 1000 });
+      await gamePage.testHooks.setWheelLandingIndex(1);
+      await gamePage.testHooks.setPlayerData({ bet: 20 });
+      await gamePage.testHooks.setWheelLandingIndex(2);
 
       await gamePage.spin();
-      await gamePage.waitForWheelToStop();
+      await gamePage.state.waitForWheelToStop();
 
       // Should use latest settings
-      const balance = await gamePage.getBalance();
+      const balance = await gamePage.data.getBalance();
       expect(balance).toBe(980); // 1000 - 20
     });
 
     test("should maintain hook settings across multiple spins", async () => {
-      await gamePage.setPlayerData({ balance: 1000, bet: 25 });
-      await gamePage.setWheelLandingIndex(0);
+      await gamePage.testHooks.setPlayerData({ balance: 1000, bet: 25 });
+      await gamePage.testHooks.setWheelLandingIndex(0);
 
       // First spin
       await gamePage.spin();
-      await gamePage.waitForWheelToStop();
+      await gamePage.state.waitForWheelToStop();
 
-      let balance = await gamePage.getBalance();
+      let balance = await gamePage.data.getBalance();
       expect(balance).toBe(975);
 
       // Second spin with same settings
       await gamePage.spin();
-      await gamePage.waitForWheelToStop();
+      await gamePage.state.waitForWheelToStop();
 
-      balance = await gamePage.getBalance();
+      balance = await gamePage.data.getBalance();
       expect(balance).toBe(950);
     });
   });

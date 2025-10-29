@@ -89,27 +89,29 @@ export class WheelGamePage {
   }
 
   /**
+   * Set quick spin mode to a specific state
+   */
+  async setQuickSpin(enabled: boolean): Promise<void> {
+    await this.testHooks.setPlayerData({ quickSpin: enabled });
+
+    const isEnabled = await this.state.isQuickSpinEnabled();
+    if (isEnabled !== enabled) {
+      await this.toggleQuickSpin();
+    }
+  }
+
+  /**
    * Enable quick spin if not already enabled
    */
   async enableQuickSpin(): Promise<void> {
-    await this.testHooks.setPlayerData({ quickSpin: true });
-
-    const isEnabled = await this.state.isQuickSpinEnabled();
-    if (!isEnabled) {
-      await this.toggleQuickSpin();
-    }
+    await this.setQuickSpin(true);
   }
 
   /**
    * Disable quick spin if currently enabled
    */
   async disableQuickSpin(): Promise<void> {
-    await this.testHooks.setPlayerData({ quickSpin: false });
-
-    const isEnabled = await this.state.isQuickSpinEnabled();
-    if (isEnabled) {
-      await this.toggleQuickSpin();
-    }
+    await this.setQuickSpin(false);
   }
 
   /**
