@@ -18,7 +18,7 @@ export interface DistributionData {
 
 export class DistributionTestingLogic {
   private readonly wheelGamePage: WheelGamePage;
-  private readonly distributionData: DistributionData;
+  private distributionData: DistributionData;
   private readonly world: CustomWorld;
   private readonly NUM_SLICES = 12; // Wheel has 12 slices
 
@@ -26,6 +26,20 @@ export class DistributionTestingLogic {
     this.world = world;
     this.wheelGamePage = world.wheelGamePage;
     this.distributionData = this.initializeDistributionData();
+  }
+
+  static ensureInitialized(world: CustomWorld): DistributionTestingLogic {
+    if (!world.wheelGamePage) {
+      world.wheelGamePage = new WheelGamePage(world.page);
+    }
+    if (!world.distributionLogic) {
+      world.distributionLogic = new DistributionTestingLogic(world);
+    }
+    return world.distributionLogic;
+  }
+
+  setDistributionData(data: DistributionData): void {
+    this.distributionData = data;
   }
 
   /**
@@ -45,24 +59,24 @@ export class DistributionTestingLogic {
     for (let i = 0; i < this.NUM_SLICES; i++) {
       data.distribution[i] = 0;
     }
-    
+
     // Pre-populate known slice configurations from game code
     // This avoids the slow identification phase
     data.sliceConfig = {
-      0: 100,  // 10x (bet is typically 10)
-      1: 50,   // 5x
-      2: 0,    // 0x
-      3: 20,   // 2x
-      4: 10,   // 1x
-      5: 5,    // 0.5x
-      6: 100,  // 10x
-      7: 40,   // 4x (note: sprite shows 5x but pays 4x - known bug)
-      8: 0,    // 0x
-      9: 20,   // 2x
-      10: 10,  // 1x
-      11: 5    // 0.5x
+      0: 100, // 10x (bet is typically 10)
+      1: 50, // 5x
+      2: 0, // 0x
+      3: 20, // 2x
+      4: 10, // 1x
+      5: 5, // 0.5x
+      6: 100, // 10x
+      7: 40, // 4x (note: sprite shows 5x but pays 4x - known bug)
+      8: 0, // 0x
+      9: 20, // 2x
+      10: 10, // 1x
+      11: 5, // 0.5x
     };
-    
+
     data.sliceMultipliers = {
       0: 10,
       1: 5,
@@ -75,7 +89,7 @@ export class DistributionTestingLogic {
       8: 0,
       9: 2,
       10: 1,
-      11: 0.5
+      11: 0.5,
     };
 
     return data;
@@ -92,7 +106,7 @@ export class DistributionTestingLogic {
    * Initialize player with balance
    */
   public async initializePlayer(balance: number): Promise<void> {
-    await this.wheelGamePage.setPlayerData({ balance });
+    await this.wheelGamePage.testHooks.setPlayerData({ balance });
   }
 
   /**
@@ -100,27 +114,32 @@ export class DistributionTestingLogic {
    * Uses quick spin for faster identification
    */
   public async identifySliceConfigurations(): Promise<void> {
-    console.log(`📊 Identifying slice configurations for ${this.NUM_SLICES} slices (with quick spin)...`);
-    
+    console.log(
+      `📊 Identifying slice configurations for ${this.NUM_SLICES} slices (with quick spin)...`
+    );
+
     // Enable quick spin for faster configuration identification
-    const wasQuickSpinEnabled = await this.wheelGamePage.isQuickSpinEnabled();
+    const wasQuickSpinEnabled =
+      await this.wheelGamePage.state.isQuickSpinEnabled();
     if (!wasQuickSpinEnabled) {
       await this.wheelGamePage.enableQuickSpin();
     }
-    
-    const testBet = await this.wheelGamePage.getBet();
+
+    const testBet = await this.wheelGamePage.data.getBet();
 
     for (let sliceIndex = 0; sliceIndex < this.NUM_SLICES; sliceIndex++) {
-      await this.wheelGamePage.setWheelLandingIndex(sliceIndex);
+      await this.wheelGamePage.testHooks.setWheelLandingIndex(sliceIndex);
       await this.wheelGamePage.spin();
-      await this.wheelGamePage.waitForWheelToStop();
+      await this.wheelGamePage.state.waitForWheelToStop();
 
-      const winAmount = await this.wheelGamePage.getWin();
+      const winAmount = await this.wheelGamePage.data.getWin();
       this.distributionData.sliceConfig[sliceIndex] = winAmount;
       this.distributionData.sliceMultipliers[sliceIndex] = winAmount / testBet;
-      console.log(`   Slice ${sliceIndex}: pays ${winAmount} (${this.distributionData.sliceMultipliers[sliceIndex]}x)`);
+      console.log(
+        `   Slice ${sliceIndex}: pays ${winAmount} (${this.distributionData.sliceMultipliers[sliceIndex]}x)`
+      );
     }
-    
+
     // Restore original quick spin state if it was disabled
     if (!wasQuickSpinEnabled) {
       await this.wheelGamePage.disableQuickSpin();
@@ -143,7 +162,7 @@ export class DistributionTestingLogic {
    * Get the slice index that the wheel landed on
    */
   private async getLandedSliceIndex(): Promise<number> {
-    return await this.wheelGamePage.getLandedSliceIndex();
+    return await this.wheelGamePage.state.getLandedSliceIndex();
   }
 
   /**
@@ -153,23 +172,29 @@ export class DistributionTestingLogic {
     const startTime = Date.now();
     console.log(`\n🎰 Starting distribution test with ${times} spins...`);
     console.log(`   Using ${this.NUM_SLICES} slice wheel configuration`);
-    console.log(`   Quick spin: ${await this.wheelGamePage.isQuickSpinEnabled() ? 'ENABLED ⚡' : 'DISABLED'}`);
+    console.log(
+      `   Quick spin: ${
+        (await this.wheelGamePage.state.isQuickSpinEnabled())
+          ? "ENABLED ⚡"
+          : "DISABLED"
+      }`
+    );
 
-    await this.wheelGamePage.setWheelLandingIndex(undefined);
+    await this.wheelGamePage.testHooks.setWheelLandingIndex(undefined);
 
     // Reset counters
     this.resetDistributionCounters();
 
     // Perform spins
     for (let spinNumber = 0; spinNumber < times; spinNumber++) {
-      const currentBet = await this.wheelGamePage.getBet();
+      const currentBet = await this.wheelGamePage.data.getBet();
 
       await this.wheelGamePage.spin();
-      await this.wheelGamePage.waitForWheelToStop();
+      await this.wheelGamePage.state.waitForWheelToStop();
 
       // Get the actual slice index the wheel landed on
       const landedSlice = await this.getLandedSliceIndex();
-      const winAmount = await this.wheelGamePage.getWin();
+      const winAmount = await this.wheelGamePage.data.getWin();
 
       this.distributionData.distribution[landedSlice]++;
       this.distributionData.totalWon += winAmount;
@@ -179,17 +204,34 @@ export class DistributionTestingLogic {
       // Progress indicator
       if ((spinNumber + 1) % 10 === 0 || spinNumber === times - 1) {
         const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-        const spinsPerSec = ((spinNumber + 1) / (Date.now() - startTime) * 1000).toFixed(1);
-        console.log(`   Progress: ${spinNumber + 1}/${times} spins (${elapsed}s elapsed, ${spinsPerSec} spins/sec)`);
+        const spinsPerSec = (
+          ((spinNumber + 1) / (Date.now() - startTime)) *
+          1000
+        ).toFixed(1);
+        console.log(
+          `   Progress: ${
+            spinNumber + 1
+          }/${times} spins (${elapsed}s elapsed, ${spinsPerSec} spins/sec)`
+        );
       }
 
       // Print raw results every 100 spins
       if ((spinNumber + 1) % 100 === 0) {
         console.log(`\n📊 Raw Results After ${spinNumber + 1} Spins:`);
-        console.log(`   Distribution: ${JSON.stringify(this.distributionData.distribution)}`);
+        console.log(
+          `   Distribution: ${JSON.stringify(
+            this.distributionData.distribution
+          )}`
+        );
         console.log(`   Total Wagered: ${this.distributionData.totalWagered}`);
         console.log(`   Total Won: ${this.distributionData.totalWon}`);
-        console.log(`   RTP: ${((this.distributionData.totalWon / this.distributionData.totalWagered) * 100).toFixed(2)}%\n`);
+        console.log(
+          `   RTP: ${(
+            (this.distributionData.totalWon /
+              this.distributionData.totalWagered) *
+            100
+          ).toFixed(2)}%\n`
+        );
       }
     }
 
@@ -197,7 +239,11 @@ export class DistributionTestingLogic {
     console.log(`\n✅ Spin testing complete in ${totalTime}s`);
     console.log(`   Total wagered: ${this.distributionData.totalWagered}`);
     console.log(`   Total won: ${this.distributionData.totalWon}`);
-    console.log(`   Net result: ${this.distributionData.totalWon - this.distributionData.totalWagered}`);
+    console.log(
+      `   Net result: ${
+        this.distributionData.totalWon - this.distributionData.totalWagered
+      }`
+    );
   }
 
   /**
@@ -226,12 +272,12 @@ export class DistributionTestingLogic {
       }
 
       // Clear forced landing
-      await this.wheelGamePage.setWheelLandingIndex(undefined);
+      await this.wheelGamePage.testHooks.setWheelLandingIndex(undefined);
 
       // Run spins for this set
       for (let spin = 0; spin < spinsPerSet; spin++) {
         await this.wheelGamePage.spin();
-        await this.wheelGamePage.waitForWheelToStop();
+        await this.wheelGamePage.state.waitForWheelToStop();
 
         const landedSlice = await this.getLandedSliceIndex();
         setDistribution[landedSlice]++;
@@ -253,28 +299,37 @@ export class DistributionTestingLogic {
     console.log("=".repeat(80));
     console.log(`Total Spins: ${totalSpins}`);
     console.log(`Number of Slices: ${this.NUM_SLICES}`);
-    console.log(`Expected per slice: ${expectedPerSlice.toFixed(2)} hits (${(100/this.NUM_SLICES).toFixed(2)}%)`);
+    console.log(
+      `Expected per slice: ${expectedPerSlice.toFixed(2)} hits (${(
+        100 / this.NUM_SLICES
+      ).toFixed(2)}%)`
+    );
     console.log(`Tolerance: ±${(tolerance * 100).toFixed(0)}%`);
     console.log("\nSlice Results:");
     console.log("-".repeat(80));
-    
+
     const errors: string[] = [];
     const passingSlices: number[] = [];
     const failingSlices: number[] = [];
     let slicesNeverHit = 0;
-    
+
     for (let i = 0; i < this.NUM_SLICES; i++) {
       const count = this.distributionData.distribution[i];
       const percentage = (count / totalSpins) * 100;
       const deviation = ((count - expectedPerSlice) / expectedPerSlice) * 100;
       const multiplier = this.distributionData.sliceMultipliers[i];
-      const status = Math.abs(deviation) < tolerance * 100 ? "✅ PASS" : "❌ FAIL";
-      
+      const status =
+        Math.abs(deviation) < tolerance * 100 ? "✅ PASS" : "❌ FAIL";
+
       console.log(
-        `Slice ${i.toString().padStart(2)}: ${count.toString().padStart(3)} hits | ` +
-        `${percentage.toFixed(1).padStart(5)}% | ` +
-        `Deviation: ${(deviation >= 0 ? '+' : '') + deviation.toFixed(1).padStart(6)}% | ` +
-        `Multiplier: ${multiplier.toFixed(1).padStart(4)}x | ${status}`
+        `Slice ${i.toString().padStart(2)}: ${count
+          .toString()
+          .padStart(3)} hits | ` +
+          `${percentage.toFixed(1).padStart(5)}% | ` +
+          `Deviation: ${
+            (deviation >= 0 ? "+" : "") + deviation.toFixed(1).padStart(6)
+          }% | ` +
+          `Multiplier: ${multiplier.toFixed(1).padStart(4)}x | ${status}`
       );
 
       if (count === 0) {
@@ -284,20 +339,28 @@ export class DistributionTestingLogic {
       if (Math.abs(deviation) >= tolerance * 100) {
         failingSlices.push(i);
         errors.push(
-          `Slice ${i} (${multiplier}x): ${count} hits (${percentage.toFixed(1)}%), ` +
-          `deviation ${(deviation >= 0 ? '+' : '')}${deviation.toFixed(1)}% exceeds ±${tolerance * 100}%`
+          `Slice ${i} (${multiplier}x): ${count} hits (${percentage.toFixed(
+            1
+          )}%), ` +
+            `deviation ${deviation >= 0 ? "+" : ""}${deviation.toFixed(
+              1
+            )}% exceeds ±${tolerance * 100}%`
         );
       } else {
         passingSlices.push(i);
       }
     }
-    
+
     console.log("-".repeat(80));
     console.log(`\n📊 Summary:`);
-    console.log(`   Passing slices: ${passingSlices.length}/${this.NUM_SLICES}`);
-    console.log(`   Failing slices: ${failingSlices.length}/${this.NUM_SLICES}`);
+    console.log(
+      `   Passing slices: ${passingSlices.length}/${this.NUM_SLICES}`
+    );
+    console.log(
+      `   Failing slices: ${failingSlices.length}/${this.NUM_SLICES}`
+    );
     console.log(`   Slices never hit: ${slicesNeverHit}/${this.NUM_SLICES}`);
-    
+
     if (slicesNeverHit > 0) {
       const neverHitSlices = [];
       for (let i = 0; i < this.NUM_SLICES; i++) {
@@ -305,14 +368,20 @@ export class DistributionTestingLogic {
           neverHitSlices.push(i);
         }
       }
-      console.log(`   ⚠️  WARNING: Slices [${neverHitSlices.join(', ')}] were NEVER hit - possible RNG bug!`);
+      console.log(
+        `   ⚠️  WARNING: Slices [${neverHitSlices.join(
+          ", "
+        )}] were NEVER hit - possible RNG bug!`
+      );
     }
-    
+
     console.log("=".repeat(80) + "\n");
-    
+
     if (errors.length > 0) {
       throw new Error(
-        `Distribution validation failed (${failingSlices.length}/${this.NUM_SLICES} slices outside tolerance):\n\n${errors.join('\n')}`
+        `Distribution validation failed (${failingSlices.length}/${
+          this.NUM_SLICES
+        } slices outside tolerance):\n\n${errors.join("\n")}`
       );
     }
   }
@@ -328,28 +397,42 @@ export class DistributionTestingLogic {
     let chiSquare = 0;
     console.log("\n📊 Chi-Square Test:");
     console.log("-".repeat(80));
-    
+
     for (let i = 0; i < this.NUM_SLICES; i++) {
       const observed = this.distributionData.distribution[i];
       const expected = expectedPerSlice;
       const contribution = Math.pow(observed - expected, 2) / expected;
       chiSquare += contribution;
-      
+
       if (contribution > 1) {
-        console.log(`   Slice ${i}: χ² contribution = ${contribution.toFixed(2)} (high variance)`);
+        console.log(
+          `   Slice ${i}: χ² contribution = ${contribution.toFixed(
+            2
+          )} (high variance)`
+        );
       }
     }
 
     console.log("-".repeat(80));
     console.log(`Chi-Square Statistic: ${chiSquare.toFixed(2)}`);
-    console.log(`Critical Value (α=0.05, df=${this.NUM_SLICES - 1}): ${criticalValue}`);
-    console.log(`Result: ${chiSquare < criticalValue ? '✅ PASS - Distribution appears random' : '❌ FAIL - Distribution is not random'}`);
+    console.log(
+      `Critical Value (α=0.05, df=${this.NUM_SLICES - 1}): ${criticalValue}`
+    );
+    console.log(
+      `Result: ${
+        chiSquare < criticalValue
+          ? "✅ PASS - Distribution appears random"
+          : "❌ FAIL - Distribution is not random"
+      }`
+    );
     console.log("-".repeat(80));
 
     if (chiSquare >= criticalValue) {
       throw new Error(
-        `Chi-Square test failed: ${chiSquare.toFixed(2)} exceeds critical value ${criticalValue}\n` +
-        `This indicates the wheel distribution is NOT random and may be rigged.`
+        `Chi-Square test failed: ${chiSquare.toFixed(
+          2
+        )} exceeds critical value ${criticalValue}\n` +
+          `This indicates the wheel distribution is NOT random and may be rigged.`
       );
     }
 
@@ -400,7 +483,7 @@ export class DistributionTestingLogic {
    * Validate total wagered equals spins times bet
    */
   public async validateTotalWagered(): Promise<void> {
-    const bet = await this.wheelGamePage.getBet();
+    const bet = await this.wheelGamePage.data.getBet();
     const expectedWagered = this.distributionData.totalSpins * bet;
 
     if (this.distributionData.totalWagered !== expectedWagered) {

@@ -20,7 +20,16 @@ Feature: Autoplay Mode
     And the autoplay display should show "Off"
 
   Scenario: Autoplay spins wheel automatically
-    Given the player has placed a bet of 50
+    Given the player has a balance of 10000
+    And the player has placed a bet of 50
+    And autoplay is enabled
+    When the player clicks the spin button
+    Then the wheel should complete 5 spins automatically
+
+  Scenario: Autoplay spins wheel automatically with quick spin
+    Given the player has a balance of 10000
+    And the player has placed a bet of 50
+    And the player enables quick spin
     And autoplay is enabled
     When the player clicks the spin button
     Then the wheel should complete 5 spins automatically

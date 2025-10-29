@@ -30,15 +30,31 @@ export class WheelGameTestHooks {
    * Use test hook to set wheel landing index
    */
   async setWheelLandingIndex(index: number | undefined): Promise<void> {
-    await this.page.evaluate((landingIndex) => {
-      (
+    const result = await this.page.evaluate((landingIndex) => {
+      console.log(`🎲 Test hook: Setting landing index to ${landingIndex}`);
+      const setWheelLandIndex = (
         globalThis as typeof globalThis & {
           setWheelLandIndex: (index: typeof landingIndex) => void;
         }
-      ).setWheelLandIndex(landingIndex);
-    }, index);
-  }
+      ).setWheelLandIndex;
 
+      if (typeof setWheelLandIndex === "function") {
+        setWheelLandIndex(landingIndex);
+        console.log(`✅ Test hook applied successfully`);
+
+        // Verify it was set by checking the game state
+        const game = (globalThis as any).game;
+        const wheelLandIndex = game?._testHooks?.wheelLandIndex;
+        console.log(`🔍 Verification: wheelLandIndex is now ${wheelLandIndex}`);
+        return { success: true, setTo: wheelLandIndex };
+      } else {
+        console.error(`❌ setWheelLandIndex is not available!`);
+        return { success: false, error: "Function not available" };
+      }
+    }, index);
+
+    console.log(`Test hook result:`, result);
+  }
   /**
    * Set the wheel to land on a slice with the specified multiplier
    * Finds the first slice with matching multiplier and sets it as landing index

@@ -1,9 +1,9 @@
-import { World, IWorldOptions, setWorldConstructor } from '@cucumber/cucumber';
-import { Page } from '@playwright/test';
-import { WheelGamePage } from '../../pages/WheelGamePage';
-import { DistributionTestingLogic } from '../../logic/DistributionTestingLogic';
-import { AutoplayTestingLogic } from '../../logic/AutoplayTestingLogic';
-import { TestResultsSink } from '../../logic/TestResultsSink';
+import { World, IWorldOptions, setWorldConstructor } from "@cucumber/cucumber";
+import { Page } from "@playwright/test";
+import { WheelGamePage } from "../../pages/WheelGamePage";
+import { DistributionTestingLogic } from "../../logic/DistributionTestingLogic";
+import { AutoplayTestingLogic } from "../../logic/AutoplayTestingLogic";
+import { TestResultsSink } from "../../logic/TestResultsSink";
 
 export interface MultiplierTestResult {
   sliceIndex?: number;
@@ -32,6 +32,7 @@ export interface CustomWorld extends World {
   normalSpinBaseline?: number;
   quickSpinBaseline?: number;
   testError?: Error; // Store non-critical errors to allow continuation
+  targetSliceIndex?: number; // Target slice for next spin (set by test hooks)
 }
 
 export class CustomWorldImpl extends World implements CustomWorld {
@@ -47,6 +48,7 @@ export class CustomWorldImpl extends World implements CustomWorld {
   normalSpinBaseline?: number;
   quickSpinBaseline?: number;
   testError?: Error;
+  targetSliceIndex?: number;
 
   constructor(options: IWorldOptions) {
     super(options);

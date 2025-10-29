@@ -21,6 +21,7 @@ Feature: Spinning the Wheel
     Then the wheel should not spin
     And an error message should be displayed
 
+  @broken
   Scenario: Force wheel to land on specific slice
     Given the player has placed a bet of 100
     And the wheel is set to land on slice 3

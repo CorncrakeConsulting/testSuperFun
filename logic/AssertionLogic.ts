@@ -18,88 +18,92 @@ export class AssertionLogic {
   private normalSpinBaseline?: number;
   private quickSpinBaseline?: number;
 
-  constructor(
-    private page: Page,
-    private wheelGamePage: WheelGamePage
-  ) {}
+  constructor(private page: Page, private wheelGamePage: WheelGamePage) {}
 
   async assertBalanceUpdated(initialBalance?: number): Promise<void> {
-    const currentBalance = await this.wheelGamePage.getBalance();
+    const currentBalance = await this.wheelGamePage.data.getBalance();
     expect(currentBalance).toBeDefined();
     expect(currentBalance).not.toBe(initialBalance);
   }
 
-  async assertBalanceDecreasedBy(initialBalance: number, amount: number): Promise<void> {
+  async assertBalanceDecreasedBy(
+    initialBalance: number,
+    amount: number
+  ): Promise<void> {
     await this.page.waitForTimeout(1000);
-    const currentBalance = await this.wheelGamePage.getBalance();
+    const currentBalance = await this.wheelGamePage.data.getBalance();
     expect(currentBalance).toBe(initialBalance - amount);
   }
 
   async assertBalanceEquals(expectedBalance: number): Promise<void> {
-    const currentBalance = await this.wheelGamePage.getBalance();
+    const currentBalance = await this.wheelGamePage.data.getBalance();
     expect(currentBalance).toBe(expectedBalance);
   }
 
   async assertBalanceIncreasedByWin(initialBalance: number): Promise<void> {
-    await this.wheelGamePage.waitForWheelToStop();
+    await this.wheelGamePage.state.waitForWheelToStop();
     await this.page.waitForTimeout(1000);
-    const winAmount = await this.wheelGamePage.getWin();
-    const currentBalance = await this.wheelGamePage.getBalance();
+    const winAmount = await this.wheelGamePage.data.getWin();
+    const currentBalance = await this.wheelGamePage.data.getBalance();
     expect(winAmount).toBeGreaterThan(0);
     expect(currentBalance).toBeGreaterThan(initialBalance);
   }
 
-  async assertBalanceDecreasedAfterFirstSpin(initialBalance: number): Promise<number> {
+  async assertBalanceDecreasedAfterFirstSpin(
+    initialBalance: number
+  ): Promise<number> {
     await this.page.waitForTimeout(3000);
-    const currentBalance = await this.wheelGamePage.getBalance();
+    const currentBalance = await this.wheelGamePage.data.getBalance();
     expect(currentBalance).toBeLessThan(initialBalance);
     return currentBalance;
   }
 
-  async assertBalanceChangedAfterAutoplaySecondSpin(balanceAfterFirstSpin: number): Promise<void> {
+  async assertBalanceChangedAfterAutoplaySecondSpin(
+    balanceAfterFirstSpin: number
+  ): Promise<void> {
     await this.page.waitForTimeout(8000);
-    const currentBalance = await this.wheelGamePage.getBalance();
+    const currentBalance = await this.wheelGamePage.data.getBalance();
     expect(currentBalance).not.toBe(balanceAfterFirstSpin);
   }
 
   async assertWinAmountCalculatedCorrectly(): Promise<void> {
-    await this.wheelGamePage.waitForWheelToStop();
-    const winAmount = await this.wheelGamePage.getWin();
+    await this.wheelGamePage.state.waitForWheelToStop();
+    const winAmount = await this.wheelGamePage.data.getWin();
     expect(winAmount).toBeGreaterThanOrEqual(0);
   }
 
   async assertBetEquals(expectedBet: number): Promise<void> {
-    const currentBet = await this.wheelGamePage.getBet();
+    const currentBet = await this.wheelGamePage.data.getBet();
     expect(currentBet).toBe(expectedBet);
   }
 
   async assertAutoplayEnabled(): Promise<void> {
-    const isEnabled = await this.wheelGamePage.isAutoplayEnabled();
+    const isEnabled = await this.wheelGamePage.data.isAutoplayEnabled();
     expect(isEnabled).toBeTruthy();
   }
 
   async assertAutoplayDisabled(): Promise<void> {
-    const isEnabled = await this.wheelGamePage.isAutoplayEnabled();
+    const isEnabled = await this.wheelGamePage.data.isAutoplayEnabled();
     expect(isEnabled).toBeFalsy();
   }
 
   async assertAutoplayDisplayShows(expectedText: string): Promise<void> {
-    const autoplayText = await this.wheelGamePage.getAutoplayText();
+    const autoplayText = await this.wheelGamePage.data.getAutoplayText();
     expect(autoplayText).toContain(expectedText);
   }
 
   async assertAnotherSpinStartsAutomatically(): Promise<void> {
-    await this.wheelGamePage.waitForWheelToStop();
+    await this.wheelGamePage.state.waitForWheelToStop();
     await this.page.waitForTimeout(1500);
-    const isSpinning = await this.wheelGamePage.isWheelSpinning();
+    const isSpinning = await this.wheelGamePage.state.isSpinning();
     expect(isSpinning).toBeTruthy();
   }
 
   async assertQuickSpinFasterThanNormal(): Promise<void> {
     const startTime = Date.now();
-    await this.wheelGamePage.waitForWheelToStop();
+    await this.wheelGamePage.state.waitForWheelToStop();
     const quickSpinDuration = Date.now() - startTime;
-    
+
     console.log(`Quick spin duration: ${quickSpinDuration}ms`);
     // Quick spin should complete in approximately 2.5-4 seconds (with 3.5x speed multiplier)
     expect(quickSpinDuration).toBeLessThan(4500);
@@ -108,9 +112,9 @@ export class AssertionLogic {
 
   async assertNormalSpinSpeed(spinStartTime?: number): Promise<void> {
     const startTime = spinStartTime ?? Date.now();
-    await this.wheelGamePage.waitForWheelToStop();
+    await this.wheelGamePage.state.waitForWheelToStop();
     const normalSpinDuration = Date.now() - startTime;
-    
+
     console.log(`Normal spin duration: ${normalSpinDuration}ms`);
     // Normal spin should take 8-11 seconds (platform dependent but generally 9-10s)
     expect(normalSpinDuration).toBeGreaterThanOrEqual(7000);
@@ -118,21 +122,21 @@ export class AssertionLogic {
 
   async assertAllSpinsFasterThanNormal(spinCount: number): Promise<void> {
     const durations: number[] = [];
-    
+
     for (let i = 0; i < spinCount; i++) {
       const startTime = Date.now();
-      await this.wheelGamePage.waitForWheelToStop();
+      await this.wheelGamePage.state.waitForWheelToStop();
       const duration = Date.now() - startTime;
       durations.push(duration);
       console.log(`Spin ${i + 1} duration: ${duration}ms`);
-      
+
       // If not the last spin, wait a bit and spin again
       if (i < spinCount - 1) {
         await this.page.waitForTimeout(1000);
         await this.wheelGamePage.spin();
       }
     }
-    
+
     // All spins should be quick (under 4.5 seconds)
     for (const duration of durations) {
       expect(duration).toBeLessThan(4500);
@@ -141,38 +145,45 @@ export class AssertionLogic {
 
   async assertNormalSpinWithinMaxDuration(maxDuration: number): Promise<void> {
     const startTime = Date.now();
-    await this.wheelGamePage.waitForWheelToStop();
+    await this.wheelGamePage.state.waitForWheelToStop();
     const duration = Date.now() - startTime;
-    
-    console.log(`Normal spin duration: ${duration}ms (max allowed: ${maxDuration}ms)`);
+
+    console.log(
+      `Normal spin duration: ${duration}ms (max allowed: ${maxDuration}ms)`
+    );
     expect(duration).toBeLessThan(maxDuration);
   }
 
   async assertQuickSpinWithinMaxDuration(maxDuration: number): Promise<void> {
     const startTime = Date.now();
-    await this.wheelGamePage.waitForWheelToStop();
+    await this.wheelGamePage.state.waitForWheelToStop();
     const duration = Date.now() - startTime;
-    
-    console.log(`Quick spin duration: ${duration}ms (max allowed: ${maxDuration}ms)`);
+
+    console.log(
+      `Quick spin duration: ${duration}ms (max allowed: ${maxDuration}ms)`
+    );
     expect(duration).toBeLessThan(maxDuration);
   }
 
-  async assertAllSpinsQuick(spinCount: number, baseline?: number): Promise<void> {
+  async assertAllSpinsQuick(
+    spinCount: number,
+    baseline?: number
+  ): Promise<void> {
     const durations: number[] = [];
-    
+
     for (let i = 0; i < spinCount; i++) {
       const startTime = Date.now();
-      await this.wheelGamePage.waitForWheelToStop();
+      await this.wheelGamePage.state.waitForWheelToStop();
       const duration = Date.now() - startTime;
       durations.push(duration);
       console.log(`Quick spin ${i + 1} duration: ${duration}ms`);
-      
+
       if (i < spinCount - 1) {
         await this.page.waitForTimeout(1000);
         await this.wheelGamePage.spin();
       }
     }
-    
+
     // All spins should be quick (under 4.5 seconds)
     for (const duration of durations) {
       expect(duration).toBeLessThan(4500);
@@ -187,13 +198,16 @@ export class AssertionLogic {
     }
   }
 
-  async assertReturnToNormalSpeed(spinStartTime?: number, baseline?: number): Promise<void> {
+  async assertReturnToNormalSpeed(
+    spinStartTime?: number,
+    baseline?: number
+  ): Promise<void> {
     const startTime = spinStartTime ?? Date.now();
-    await this.wheelGamePage.waitForWheelToStop();
+    await this.wheelGamePage.state.waitForWheelToStop();
     const duration = Date.now() - startTime;
-    
+
     console.log(`Spin duration after disabling quick spin: ${duration}ms`);
-    
+
     if (baseline) {
       console.log(`Normal spin baseline: ${baseline}ms`);
       // Should be within 30% of the calibrated normal baseline
@@ -212,57 +226,67 @@ export class AssertionLogic {
     attachScreenshot: (data: Buffer, mediaType: string) => void
   ): void {
     expect(results.length).toBeGreaterThan(0);
-    
+
     const errors: string[] = [];
-    
+
     for (const result of results) {
-      const { 
-        sliceIndex, 
-        sprite, 
-        expectedMultiplier, 
-        configuredMultiplier, 
-        expectedWin, 
-        actualWin, 
-        bet, 
-        balanceBeforeSpin, 
-        balanceAfterSpin, 
-        screenshot 
+      const {
+        sliceIndex,
+        sprite,
+        expectedMultiplier,
+        configuredMultiplier,
+        expectedWin,
+        actualWin,
+        bet,
+        balanceBeforeSpin,
+        balanceAfterSpin,
+        screenshot,
       } = result;
-      
-      const actualBalanceChange = (balanceAfterSpin ?? 0) - (balanceBeforeSpin ?? 0) + (bet ?? 0);
-      
+
+      const actualBalanceChange =
+        (balanceAfterSpin ?? 0) - (balanceBeforeSpin ?? 0) + (bet ?? 0);
+
       console.log(`\nSlice ${sliceIndex}: ${sprite}`);
       console.log(`  Sprite shows: ${expectedMultiplier}x`);
       console.log(`  Config has: ${configuredMultiplier}x`);
       console.log(`  Expected win: ${expectedWin}`);
       console.log(`  Actual win (display): ${actualWin}`);
       console.log(`  Actual win (balance): ${actualBalanceChange}`);
-      console.log(`  Balance: ${balanceBeforeSpin} -> ${balanceAfterSpin} (bet: ${bet})`);
-      
+      console.log(
+        `  Balance: ${balanceBeforeSpin} -> ${balanceAfterSpin} (bet: ${bet})`
+      );
+
       if (expectedMultiplier !== configuredMultiplier) {
-        errors.push(`Slice ${sliceIndex}: Sprite shows ${expectedMultiplier}x but configured as ${configuredMultiplier}x`);
-        
+        errors.push(
+          `Slice ${sliceIndex}: Sprite shows ${expectedMultiplier}x but configured as ${configuredMultiplier}x`
+        );
+
         if (screenshot) {
           attachScreenshot(screenshot, "image/png");
         }
       }
-      
+
       if (actualWin !== expectedWin) {
-        errors.push(`Slice ${sliceIndex}: Expected ${expectedWin} (${expectedMultiplier}x) but got ${actualWin}`);
-        
+        errors.push(
+          `Slice ${sliceIndex}: Expected ${expectedWin} (${expectedMultiplier}x) but got ${actualWin}`
+        );
+
         if (screenshot && expectedMultiplier === configuredMultiplier) {
           attachScreenshot(screenshot, "image/png");
         }
       }
-      
-      const expectedBalance = (balanceBeforeSpin ?? 0) - (bet ?? 0) + (actualWin ?? 0);
+
+      const expectedBalance =
+        (balanceBeforeSpin ?? 0) - (bet ?? 0) + (actualWin ?? 0);
       if (balanceAfterSpin !== expectedBalance) {
-        errors.push(`Slice ${sliceIndex}: Balance mismatch - expected ${expectedBalance} but got ${balanceAfterSpin}`);
+        errors.push(
+          `Slice ${sliceIndex}: Balance mismatch - expected ${expectedBalance} but got ${balanceAfterSpin}`
+        );
       }
     }
-    
+
     if (errors.length > 0) {
-      throw new Error(`Found ${errors.length} error(s):\n${errors.join('\n')}`);
+      throw new Error(`Found ${errors.length} error(s):\n${errors.join("\n")}`);
     }
   }
 
@@ -272,21 +296,23 @@ export class AssertionLogic {
       return game.wheel._config.slices.map((slice: any, index: number) => ({
         index,
         sprite: slice.sprite,
-        winMultiplier: slice.winMultiplier
+        winMultiplier: slice.winMultiplier,
       }));
     });
 
     const errors: string[] = [];
-    
+
     for (const slice of slices) {
       const spriteMatch = slice.sprite.match(/(\d+\.?\d*)x\.png/);
       if (!spriteMatch) {
-        errors.push(`Slice ${slice.index}: Could not parse multiplier from sprite "${slice.sprite}"`);
+        errors.push(
+          `Slice ${slice.index}: Could not parse multiplier from sprite "${slice.sprite}"`
+        );
         continue;
       }
-      
+
       const spriteMultiplier = Number.parseFloat(spriteMatch[1]);
-      
+
       if (spriteMultiplier !== slice.winMultiplier) {
         errors.push(
           `Slice ${slice.index}: Sprite shows "${spriteMatch[1]}x" but winMultiplier is ${slice.winMultiplier}`
@@ -295,7 +321,11 @@ export class AssertionLogic {
     }
 
     if (errors.length > 0) {
-      throw new Error(`Found ${errors.length} sprite-to-multiplier mismatch(es):\n${errors.join('\n')}`);
+      throw new Error(
+        `Found ${
+          errors.length
+        } sprite-to-multiplier mismatch(es):\n${errors.join("\n")}`
+      );
     }
   }
 }

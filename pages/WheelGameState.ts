@@ -1,5 +1,6 @@
 import { Page } from "@playwright/test";
 import { WheelGameLocators } from "./WheelGameLocators";
+import { WheelState } from "../types/WheelState";
 
 /**
  * Game State Manager for the Wheel Game
@@ -20,7 +21,7 @@ export class WheelGameState {
       if (!game?.wheel?._state) return false;
 
       const state = game.wheel._state;
-      return state === "SPINNING" || state === "RESOLVING";
+      return state === WheelState.Spinning || state === WheelState.Resolving;
     });
   }
 
@@ -31,7 +32,7 @@ export class WheelGameState {
     await this.page.waitForFunction(
       () => {
         const game = (globalThis as any).game;
-        return game?.wheel?._state === "SPINNING";
+        return game?.wheel?._state === WheelState.Spinning;
       },
       { timeout }
     );
@@ -45,7 +46,7 @@ export class WheelGameState {
       () => {
         const game = (globalThis as any).game;
         const state = game?.wheel?._state;
-        return state === "RESOLVED" || state === "IDLE";
+        return state === WheelState.Resolved || state === WheelState.Idle;
       },
       { timeout }
     );

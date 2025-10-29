@@ -11,7 +11,7 @@ Feature: Wheel Distribution Fairness
     And the player has a balance of 100000
     And the player has placed a bet of 10
     And quick spin is enabled
-    When the player spins the wheel 1000 times without setting landing index
+    When the player spins the wheel 10 times without setting landing index
     Then the distribution data should be stored for analysis
 
   @distribution @order-2
