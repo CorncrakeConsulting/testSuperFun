@@ -8,7 +8,7 @@ setDefaultTimeout(60000);
 
 Given("the game is loaded", async function (this: CustomWorld) {
   const page = this.page;
-  this.wheelGamePage = new WheelGamePage(page);
+  this.wheelGamePage = WheelGamePage.create(page);
   this.autoplayLogic = new AutoplayTestingLogic(page, this.wheelGamePage);
   await this.wheelGamePage.goto();
 });
@@ -65,6 +65,8 @@ Given("quick spin is disabled", async function (this: CustomWorld) {
 Given(
   "the wheel lands on a winning slice with {int}x multiplier",
   async function (this: CustomWorld, multiplier: number) {
-    await new GameSetupTestingLogic(this.wheelGamePage).setWheelToLandOnWinningSlice(multiplier);
+    await new GameSetupTestingLogic(
+      this.wheelGamePage
+    ).setWheelToLandOnWinningSlice(multiplier);
   }
 );

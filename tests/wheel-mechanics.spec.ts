@@ -5,7 +5,7 @@ test.describe("Wheel Mechanics and Win Scenarios", () => {
   let gamePage: WheelGamePage;
 
   test.beforeEach(async ({ page }) => {
-    gamePage = new WheelGamePage(page);
+    gamePage = WheelGamePage.create(page);
     await gamePage.goto();
   });
 

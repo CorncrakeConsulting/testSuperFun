@@ -5,7 +5,7 @@ test.describe("Wheel Distribution Testing", () => {
   let gamePage: WheelGamePage;
 
   test.beforeEach(async ({ page }) => {
-    gamePage = new WheelGamePage(page);
+    gamePage = WheelGamePage.create(page);
     await gamePage.goto();
   });
 

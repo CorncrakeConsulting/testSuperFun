@@ -7,7 +7,13 @@ import {
   setDefaultTimeout,
   World,
 } from "@cucumber/cucumber";
-import { chromium, firefox, webkit, Browser, BrowserContext } from "@playwright/test";
+import {
+  chromium,
+  firefox,
+  webkit,
+  Browser,
+  BrowserContext,
+} from "@playwright/test";
 
 // Calculate timeout dynamically based on expected number of spins
 // Maximum expected spins is 1000 (for distribution testing), at ~0.5 spins/sec with quick spin, plus 50% buffer
@@ -24,14 +30,15 @@ let browser: Browser;
 let context: BrowserContext;
 
 // Get browser type from environment variable (default: chromium)
-const BROWSER = process.env.BROWSER || 'chromium';
+const BROWSER = process.env.BROWSER || "chromium";
 
 BeforeAll(async function () {
   // Launch browser once before all tests
-  const browserType = BROWSER === 'firefox' ? firefox : BROWSER === 'webkit' ? webkit : chromium;
-  
+  const browserType =
+    BROWSER === "firefox" ? firefox : BROWSER === "webkit" ? webkit : chromium;
+
   console.log(`🌐 Launching ${BROWSER} browser for Cucumber tests`);
-  
+
   browser = await browserType.launch({
     headless: true, // Set to false to see the browser
     slowMo: 50, // Slow down actions for better visibility

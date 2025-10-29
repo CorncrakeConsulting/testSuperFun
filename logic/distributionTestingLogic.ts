@@ -33,7 +33,7 @@ export class DistributionTestingLogic {
 
   static ensureInitialized(world: CustomWorld): DistributionTestingLogic {
     if (!world.wheelGamePage) {
-      world.wheelGamePage = new WheelGamePage(world.page);
+      world.wheelGamePage = WheelGamePage.create(world.page);
     }
     if (!world.distributionLogic) {
       world.distributionLogic = new DistributionTestingLogic(world);

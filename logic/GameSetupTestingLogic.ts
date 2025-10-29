@@ -36,4 +36,8 @@ export class GameSetupTestingLogic {
   async disableQuickSpin(): Promise<void> {
     await this.wheelGamePage.disableQuickSpin();
   }
+
+  async setWheelToLandOnWinningSlice(multiplier: number): Promise<void> {
+    await this.wheelGamePage.testHooks.setWheelLandingMultiplier(multiplier);
+  }
 }

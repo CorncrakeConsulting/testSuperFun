@@ -6,7 +6,12 @@ test.describe("Game Initialization and UI", () => {
   let gamePage: WheelGamePage;
 
   test.beforeEach(async ({ page }) => {
-    gamePage = new WheelGamePage(page);
+    // Using the Builder Pattern for dependency injection
+    gamePage = WheelGamePage.builder().withPage(page).build();
+
+    // Or use the convenience factory method (same result):
+    // gamePage = WheelGamePage.create(page);
+
     await gamePage.goto();
   });
 
