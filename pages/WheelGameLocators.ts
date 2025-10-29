@@ -28,7 +28,7 @@ export class WheelGameLocators {
     this.incrementBetButton = page.locator("#increment-button");
     this.decrementBetButton = page.locator("#decrement-button");
     this.autoplayButton = page.locator("#autoplay-button");
-    this.quickSpinCheckbox = page.locator("#quick-spin-button");
+    this.quickSpinCheckbox = page.locator("#quick-spin-button button");
 
     // Game elements
     this.wheel = page.locator("canvas"); // PixiJS canvas

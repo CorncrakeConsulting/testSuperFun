@@ -1,18 +1,37 @@
 /**
  * Shared Distribution Data Store
  * Allows distribution data to be shared across scenarios within a feature
- * This is a singleton that persists for the entire test run
+ * Uses file-based storage to persist data across parallel Cucumber workers
  */
 
 import { DistributionData } from "./DistributionTestingLogic";
 import { TestLogger } from "../services/TestLogger";
+import * as fs from "fs";
+import * as path from "path";
 
 class SharedDistributionStore {
   private static instance: SharedDistributionStore;
-  private distributionData: DistributionData | null = null;
-  private featureTag: string | null = null;
+  private readonly storageDir: string;
 
-  private constructor() {}
+  private constructor() {
+    // Store data in test-results directory
+    this.storageDir = path.join(
+      process.cwd(),
+      "test-results",
+      "distribution-data"
+    );
+    this.ensureStorageDir();
+  }
+
+  private ensureStorageDir(): void {
+    if (!fs.existsSync(this.storageDir)) {
+      fs.mkdirSync(this.storageDir, { recursive: true });
+    }
+  }
+
+  private getFilePath(featureTag: string): string {
+    return path.join(this.storageDir, `${featureTag}.json`);
+  }
 
   public static getInstance(): SharedDistributionStore {
     if (!SharedDistributionStore.instance) {
@@ -25,45 +44,68 @@ class SharedDistributionStore {
    * Store distribution data for a feature
    */
   public setDistributionData(data: DistributionData, featureTag: string): void {
-    this.distributionData = data;
-    this.featureTag = featureTag;
-    TestLogger.debug(`📦 Stored distribution data for feature: ${featureTag}`);
+    const filePath = this.getFilePath(featureTag);
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+    TestLogger.debug(
+      `📦 Stored distribution data for feature: ${featureTag} at ${filePath}`
+    );
   }
 
   /**
    * Retrieve distribution data for a feature
    */
   public getDistributionData(featureTag: string): DistributionData | null {
-    if (this.featureTag === featureTag && this.distributionData) {
-      TestLogger.debug(`📦 Retrieved stored distribution data for feature: ${featureTag}`);
-      return this.distributionData;
+    const filePath = this.getFilePath(featureTag);
+
+    if (!fs.existsSync(filePath)) {
+      TestLogger.debug(`📦 No stored data found for feature: ${featureTag}`);
+      return null;
     }
-    TestLogger.debug(`📦 No stored data found for feature: ${featureTag}`);
-    return null;
+
+    try {
+      const data = JSON.parse(fs.readFileSync(filePath, "utf-8"));
+      TestLogger.debug(
+        `📦 Retrieved stored distribution data for feature: ${featureTag}`
+      );
+      return data;
+    } catch (error) {
+      TestLogger.debug(
+        `📦 Error reading data for feature: ${featureTag} - ${error}`
+      );
+      return null;
+    }
   }
 
   /**
    * Check if data exists for a feature
    */
   public hasData(featureTag: string): boolean {
-    return this.featureTag === featureTag && this.distributionData !== null;
+    return fs.existsSync(this.getFilePath(featureTag));
   }
 
   /**
    * Clear stored data
    */
   public clear(): void {
-    this.distributionData = null;
-    this.featureTag = null;
-    TestLogger.debug(`📦 Cleared stored distribution data`);
+    if (fs.existsSync(this.storageDir)) {
+      const files = fs.readdirSync(this.storageDir);
+      files.forEach((file) => {
+        fs.unlinkSync(path.join(this.storageDir, file));
+      });
+    }
+    TestLogger.debug(`📦 Cleared all stored distribution data`);
   }
 
   /**
    * Clear data for a specific feature
    */
   public clearFeature(featureTag: string): void {
-    if (this.featureTag === featureTag) {
-      this.clear();
+    const filePath = this.getFilePath(featureTag);
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+      TestLogger.debug(
+        `📦 Cleared distribution data for feature: ${featureTag}`
+      );
     }
   }
 }

@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { WheelGamePage } from "../pages/WheelGamePage";
+import { TestLogger } from "../services/TestLogger";
 
 test.describe("Wheel Distribution Testing", () => {
   let gamePage: WheelGamePage;
@@ -17,7 +18,7 @@ test.describe("Wheel Distribution Testing", () => {
     let totalWagered = 0;
     let totalWon = 0;
 
-    console.log("\n💰 Testing RTP (Return to Player) over 1000 spins...\n");
+    TestLogger.info("\n💰 Testing RTP (Return to Player) over 1000 spins...\n");
 
     for (let i = 0; i < totalSpins; i++) {
       await gamePage.testHooks.setPlayerData({
@@ -35,19 +36,19 @@ test.describe("Wheel Distribution Testing", () => {
       totalWon += win;
 
       if ((i + 1) % 100 === 0) {
-        console.log(`   Completed ${i + 1}/${totalSpins} spins...`);
+        TestLogger.info(`   Completed ${i + 1}/${totalSpins} spins...`);
       }
     }
 
     const rtp = (totalWon / totalWagered) * 100;
 
-    console.log("\n" + "=".repeat(60));
-    console.log("💰 RTP ANALYSIS");
-    console.log("=".repeat(60));
-    console.log(`Total Wagered: ${totalWagered}`);
-    console.log(`Total Won: ${totalWon}`);
-    console.log(`RTP: ${rtp.toFixed(2)}%`);
-    console.log(
+    TestLogger.info("\n" + "=".repeat(60));
+    TestLogger.info("💰 RTP ANALYSIS");
+    TestLogger.info("=".repeat(60));
+    TestLogger.info(`Total Wagered: ${totalWagered}`);
+    TestLogger.info(`Total Won: ${totalWon}`);
+    TestLogger.info(`RTP: ${rtp.toFixed(2)}%`);
+    TestLogger.info(
       `Net Result: ${totalWon - totalWagered > 0 ? "+" : ""}${
         totalWon - totalWagered
       }`
@@ -55,12 +56,12 @@ test.describe("Wheel Distribution Testing", () => {
 
     // Most slot games have RTP between 85-98%
     // For testing, we expect it to be reasonable
-    console.log(
+    TestLogger.info(
       `\n${rtp >= 80 && rtp <= 120 ? "✅" : "❌"} RTP is ${
         rtp >= 80 && rtp <= 120 ? "within" : "outside"
       } reasonable range (80-120%)`
     );
-    console.log("=".repeat(60) + "\n");
+    TestLogger.info("=".repeat(60) + "\n");
 
     // Expect RTP to be reasonable (with some variance due to sample size)
     expect(rtp).toBeGreaterThan(80);
@@ -114,8 +115,8 @@ test.describe("Wheel Distribution Testing", () => {
 
     const maxAllowed = totalSpins * (1 / sliceCount + biasMargin);
 
-    console.log("\n🎯 BIAS DETECTION TEST");
-    console.log("=".repeat(60));
+    TestLogger.info("\n🎯 BIAS DETECTION TEST");
+    TestLogger.info("=".repeat(60));
 
     let biasDetected = false;
     for (let i = 0; i < sliceCount; i++) {
@@ -125,7 +126,7 @@ test.describe("Wheel Distribution Testing", () => {
 
       if (isBiased) biasDetected = true;
 
-      console.log(
+      TestLogger.info(
         `${
           isBiased ? "⚠️ " : "✅ "
         } Slice ${i}: ${count}/${totalSpins} (${percentage.toFixed(1)}%) ` +
@@ -133,9 +134,9 @@ test.describe("Wheel Distribution Testing", () => {
       );
     }
 
-    console.log("=".repeat(60));
-    console.log(biasDetected ? "❌ BIAS DETECTED!" : "✅ NO BIAS DETECTED");
-    console.log("=".repeat(60) + "\n");
+    TestLogger.info("=".repeat(60));
+    TestLogger.info(biasDetected ? "❌ BIAS DETECTED!" : "✅ NO BIAS DETECTED");
+    TestLogger.info("=".repeat(60) + "\n");
 
     expect(biasDetected).toBe(false);
   });

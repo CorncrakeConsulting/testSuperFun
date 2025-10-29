@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { WheelGamePage } from "../pages/WheelGamePage";
+import { TestLogger } from "../services/TestLogger";
 
 test.describe("Balance Calculation Bugs", () => {
   let gamePage: WheelGamePage;
@@ -42,7 +43,7 @@ test.describe("Balance Calculation Bugs", () => {
       // Check if this is the 2X slice (win should be 2 * bet)
       if (win === betAmount * 2) {
         twoXSliceIndex = sliceIndex;
-        console.log(`Found 2X multiplier at slice index: ${sliceIndex}`);
+        TestLogger.info(`Found 2X multiplier at slice index: ${sliceIndex}`);
         break;
       }
     }
@@ -76,15 +77,15 @@ test.describe("Balance Calculation Bugs", () => {
     // With 2X: New Balance = 1000 - 50 + 100 = 1050
     const expectedBalance = balanceBeforeSpin - betBeforeSpin + winAmount;
 
-    console.log("=== 2X Balance Bug Test ===");
-    console.log(`Initial Balance: ${balanceBeforeSpin}`);
-    console.log(`Bet Amount: ${betBeforeSpin}`);
-    console.log(`Win Amount: ${winAmount}`);
-    console.log(
+    TestLogger.info("=== 2X Balance Bug Test ===");
+    TestLogger.info(`Initial Balance: ${balanceBeforeSpin}`);
+    TestLogger.info(`Bet Amount: ${betBeforeSpin}`);
+    TestLogger.info(`Win Amount: ${winAmount}`);
+    TestLogger.info(
       `Expected Balance: ${expectedBalance} (${balanceBeforeSpin} - ${betBeforeSpin} + ${winAmount})`
     );
-    console.log(`Actual Balance: ${balanceAfterSpin}`);
-    console.log(`Difference: ${balanceAfterSpin - expectedBalance}`);
+    TestLogger.info(`Actual Balance: ${balanceAfterSpin}`);
+    TestLogger.info(`Difference: ${balanceAfterSpin - expectedBalance}`);
 
     // This test SHOULD expose the bug
     expect(balanceAfterSpin).toBe(expectedBalance);
@@ -130,10 +131,10 @@ test.describe("Balance Calculation Bugs", () => {
     }
 
     // Log all results
-    console.log("\n=== Balance Calculation Test Results ===");
+    TestLogger.info("\n=== Balance Calculation Test Results ===");
     results.forEach((result) => {
       const status = result.isCorrect ? "✅" : "❌";
-      console.log(
+      TestLogger.info(
         `${status} Slice ${result.sliceIndex} (${result.multiplier}X): Expected ${result.expectedBalance}, Got ${result.actualBalance}`
       );
     });
@@ -141,9 +142,9 @@ test.describe("Balance Calculation Bugs", () => {
     // Find bugs
     const bugs = results.filter((r) => !r.isCorrect);
     if (bugs.length > 0) {
-      console.log("\n🐛 BUGS FOUND:");
+      TestLogger.info("\n🐛 BUGS FOUND:");
       bugs.forEach((bug) => {
-        console.log(
+        TestLogger.info(
           `   Slice ${bug.sliceIndex} (${bug.multiplier}X): Off by ${
             bug.actualBalance - bug.expectedBalance
           }`
@@ -182,7 +183,7 @@ test.describe("Balance Calculation Bugs", () => {
     }
 
     if (twoXSlice === undefined) {
-      console.log("⚠️  No 2X slice found in wheel configuration");
+      TestLogger.info("⚠️  No 2X slice found in wheel configuration");
       test.skip();
       return;
     }
@@ -196,14 +197,14 @@ test.describe("Balance Calculation Bugs", () => {
     const finalBalance = await gamePage.getBalance();
     const winAmount = await gamePage.getWin();
 
-    console.log("\n🐛 BUG REPORT: 2X Balance Calculation");
-    console.log("=====================================");
-    console.log(`Starting Balance: 1000`);
-    console.log(`Bet: 50`);
-    console.log(`Win (2X): ${winAmount}`);
-    console.log(`Expected Final Balance: ${1000 - 50 + winAmount} = 1050`);
-    console.log(`Actual Final Balance: ${finalBalance}`);
-    console.log(
+    TestLogger.info("\n🐛 BUG REPORT: 2X Balance Calculation");
+    TestLogger.info("=====================================");
+    TestLogger.info(`Starting Balance: 1000`);
+    TestLogger.info(`Bet: 50`);
+    TestLogger.info(`Win (2X): ${winAmount}`);
+    TestLogger.info(`Expected Final Balance: ${1000 - 50 + winAmount} = 1050`);
+    TestLogger.info(`Actual Final Balance: ${finalBalance}`);
+    TestLogger.info(
       `Bug: Balance is ${
         finalBalance === 1050
           ? "CORRECT"

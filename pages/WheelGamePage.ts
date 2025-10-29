@@ -111,7 +111,9 @@ export class WheelGamePage {
    * Toggle quick spin mode
    */
   async toggleQuickSpin() {
+    await this.locators.quickSpinCheckbox.waitFor({ state: "visible" });
     await this.locators.quickSpinCheckbox.click();
+    await this.page.waitForTimeout(200); // Wait for state to update
   }
 
   /**
@@ -119,8 +121,10 @@ export class WheelGamePage {
    */
   async setQuickSpin(enabled: boolean): Promise<void> {
     await this.testHooks.setPlayerData({ quickSpin: enabled });
+    await this.page.waitForTimeout(100); // Give the game time to process the test hook
 
     const isEnabled = await this.state.isQuickSpinEnabled();
+
     if (isEnabled !== enabled) {
       await this.toggleQuickSpin();
     }
@@ -201,6 +205,17 @@ export class WheelGamePage {
     await expect(this.locators.autoplayButton).toBeVisible();
     await expect(this.locators.quickSpinCheckbox).toBeVisible();
     await expect(this.locators.wheel).toBeVisible();
+  }
+
+  /**
+   * Get the current wheel state
+   * @returns The current state of the wheel (IDLE, SPINNING, RESOLVING, etc.)
+   */
+  async getWheelState(): Promise<string> {
+    return (await this.page.evaluate(() => {
+      const game = (globalThis as typeof globalThis & Window).game;
+      return game?.wheel?._state || "";
+    })) as string;
   }
 }
 

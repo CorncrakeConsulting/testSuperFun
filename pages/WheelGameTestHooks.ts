@@ -41,13 +41,10 @@ export class WheelGameTestHooks {
 
       if (typeof setWheelLandIndex === "function") {
         setWheelLandIndex(landingIndex);
-        console.log(`✅ Test hook applied successfully`);
-
-        // Verify it was set by checking the game state
-        const game = (globalThis as any).game;
-        const wheelLandIndex = game?._testHooks?.wheelLandIndex;
-        console.log(`🔍 Verification: wheelLandIndex is now ${wheelLandIndex}`);
-        return { success: true, setTo: wheelLandIndex };
+        console.log(
+          `✅ Test hook applied: landing index set to ${landingIndex}`
+        );
+        return { success: true };
       } else {
         console.error(`❌ setWheelLandIndex is not available!`);
         return { success: false, error: "Function not available" };
@@ -55,7 +52,7 @@ export class WheelGameTestHooks {
     }, index);
 
     TestLogger.debug(`Test hook result:`, result);
-    
+
     if (!result.success) {
       const errorMsg = `Test hook failed: ${result.error}`;
       console.error(errorMsg);

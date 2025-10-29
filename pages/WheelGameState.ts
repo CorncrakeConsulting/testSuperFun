@@ -24,8 +24,8 @@ export class WheelGameState {
         const state = game.wheel._state;
         return state === spinning || state === resolving;
       },
-       [WheelState.Spinning, WheelState.Resolving]
-      );
+      [WheelState.Spinning, WheelState.Resolving]
+    );
   }
 
   /**
@@ -66,12 +66,21 @@ export class WheelGameState {
 
   /**
    * Check if quick spin is enabled
+   * Since Constants.PLAYER_DATA is not exposed globally, we check the checkbox button's image
    */
   async isQuickSpinEnabled(): Promise<boolean> {
-    return await this.page.evaluate(() => {
-      const Constants = (globalThis as any).Constants;
-      return Constants?.PLAYER_DATA?.quickSpin ?? false;
+    // Check if the checkbox shows the checked image
+    const isChecked = await this.page.evaluate(() => {
+      const quickSpinDiv = document.querySelector("#quick-spin-button");
+      const button = quickSpinDiv?.querySelector("button");
+      const img = button?.querySelector("img");
+      const imgSrc = img?.getAttribute("src") || "";
+
+      // The checked state shows "checked_box.png", unchecked shows "box.png"
+      return imgSrc.includes("checked_box.png");
     });
+
+    return isChecked;
   }
 
   /**

@@ -1,5 +1,7 @@
 import { Page } from "@playwright/test";
+import { DataTable } from "@cucumber/cucumber";
 import { WheelGamePage } from "../pages/WheelGamePage";
+import { TestLogger, ITestLogger } from "../services/TestLogger";
 
 export interface SliceTestData {
   sliceIndex: number;
@@ -19,10 +21,15 @@ export interface SliceValidationResult {
 }
 
 export class BalanceTestingLogic {
+  private readonly logger: ITestLogger;
+
   constructor(
     private readonly page: Page,
-    private readonly wheelGamePage: WheelGamePage
-  ) {}
+    private readonly wheelGamePage: WheelGamePage,
+    logger?: ITestLogger
+  ) {
+    this.logger = logger ?? TestLogger.getDefault();
+  }
 
   private async getSliceConfiguration(sliceIndex: number) {
     return await this.page.evaluate((idx) => {
@@ -112,7 +119,7 @@ export class BalanceTestingLogic {
     balanceBefore: number,
     balanceAfter: number
   ): void {
-    console.log(
+    this.logger.info(
       `Slice ${sliceIndex}: sprite=${actualSpriteMultiplier}x, ` +
         `config=${configuredMultiplier}x, ` +
         `expected_win=${expectedWin}, actual_win=${actualWin}, ` +
@@ -225,7 +232,7 @@ export class BalanceTestingLogic {
     }
   }
 
-  parseDataTableToSliceTestData(dataTable: any): SliceTestData[] {
+  parseDataTableToSliceTestData(dataTable: DataTable): SliceTestData[] {
     return dataTable.hashes().map((row: any) => ({
       //Without specifying the radix, parseInt() can be unpredictable
       sliceIndex: Number.parseInt(row.slice_index, 10),
@@ -234,7 +241,7 @@ export class BalanceTestingLogic {
     }));
   }
 
-  async validateAllSlicesFromDataTable(dataTable: any): Promise<void> {
+  async validateAllSlicesFromDataTable(dataTable: DataTable): Promise<void> {
     const sliceTestData = this.parseDataTableToSliceTestData(dataTable);
     await this.validateAllSlices(sliceTestData);
   }

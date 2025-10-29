@@ -32,4 +32,4 @@ Feature: Autoplay Mode
     And the player enables quick spin
     And autoplay is enabled
     When the player clicks the spin button
-    Then the wheel should complete 5 spins automatically
+    Then the wheel should complete 5 quick spins automatically

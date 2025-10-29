@@ -1,6 +1,6 @@
 import { Page, expect } from "@playwright/test";
 import { WheelGamePage } from "../pages/WheelGamePage";
-import { TestLogger } from "../services/TestLogger";
+import { TestLogger, ITestLogger } from "../services/TestLogger";
 
 export interface MultiplierTestResult {
   sliceIndex?: number;
@@ -16,8 +16,15 @@ export interface MultiplierTestResult {
 }
 
 export class AssertionLogic {
+  private readonly logger: ITestLogger;
 
-  constructor(private readonly page: Page, private readonly wheelGamePage: WheelGamePage) {}
+  constructor(
+    private readonly page: Page,
+    private readonly wheelGamePage: WheelGamePage,
+    logger?: ITestLogger
+  ) {
+    this.logger = logger ?? TestLogger.getDefault();
+  }
 
   async assertBalanceUpdated(initialBalance?: number): Promise<void> {
     const currentBalance = await this.wheelGamePage.data.getBalance();
@@ -103,7 +110,7 @@ export class AssertionLogic {
     await this.wheelGamePage.state.waitForWheelToStop();
     const quickSpinDuration = Date.now() - startTime;
 
-    TestLogger.debug(`Quick spin duration: ${quickSpinDuration}ms`);
+    this.logger.debug(`Quick spin duration: ${quickSpinDuration}ms`);
     // Quick spin should complete in approximately 2.5-4 seconds (with 3.5x speed multiplier)
     expect(quickSpinDuration).toBeLessThan(4500);
     expect(quickSpinDuration).toBeGreaterThan(1500);
@@ -114,7 +121,7 @@ export class AssertionLogic {
     await this.wheelGamePage.state.waitForWheelToStop();
     const normalSpinDuration = Date.now() - startTime;
 
-    TestLogger.debug(`Normal spin duration: ${normalSpinDuration}ms`);
+    this.logger.debug(`Normal spin duration: ${normalSpinDuration}ms`);
     // Normal spin should take 8-11 seconds (platform dependent but generally 9-10s)
     expect(normalSpinDuration).toBeGreaterThanOrEqual(7000);
   }
@@ -127,7 +134,7 @@ export class AssertionLogic {
       await this.wheelGamePage.state.waitForWheelToStop();
       const duration = Date.now() - startTime;
       durations.push(duration);
-      TestLogger.debug(`Spin ${i + 1} duration: ${duration}ms`);
+      this.logger.debug(`Spin ${i + 1} duration: ${duration}ms`);
 
       // If not the last spin, wait a bit and spin again
       if (i < spinCount - 1) {
@@ -147,7 +154,7 @@ export class AssertionLogic {
     await this.wheelGamePage.state.waitForWheelToStop();
     const duration = Date.now() - startTime;
 
-    TestLogger.debug(
+    this.logger.debug(
       `Normal spin duration: ${duration}ms (max allowed: ${maxDuration}ms)`
     );
     expect(duration).toBeLessThan(maxDuration);
@@ -158,7 +165,7 @@ export class AssertionLogic {
     await this.wheelGamePage.state.waitForWheelToStop();
     const duration = Date.now() - startTime;
 
-    TestLogger.debug(
+    this.logger.debug(
       `Quick spin duration: ${duration}ms (max allowed: ${maxDuration}ms)`
     );
     expect(duration).toBeLessThan(maxDuration);
@@ -175,7 +182,7 @@ export class AssertionLogic {
       await this.wheelGamePage.state.waitForWheelToStop();
       const duration = Date.now() - startTime;
       durations.push(duration);
-      TestLogger.debug(`Quick spin ${i + 1} duration: ${duration}ms`);
+      this.logger.debug(`Quick spin ${i + 1} duration: ${duration}ms`);
 
       if (i < spinCount - 1) {
         await this.page.waitForTimeout(1000);
@@ -190,7 +197,7 @@ export class AssertionLogic {
 
     // If we have a baseline, verify consistency (within 1.5x of baseline)
     if (baseline) {
-      TestLogger.debug(`Baseline: ${baseline}ms`);
+      this.logger.debug(`Baseline: ${baseline}ms`);
       for (const duration of durations) {
         expect(duration).toBeLessThanOrEqual(baseline * 1.5);
       }
@@ -205,10 +212,12 @@ export class AssertionLogic {
     await this.wheelGamePage.state.waitForWheelToStop();
     const duration = Date.now() - startTime;
 
-    TestLogger.debug(`Spin duration after disabling quick spin: ${duration}ms`);
+    this.logger.debug(
+      `Spin duration after disabling quick spin: ${duration}ms`
+    );
 
     if (baseline) {
-      TestLogger.debug(`Normal spin baseline: ${baseline}ms`);
+      this.logger.debug(`Normal spin baseline: ${baseline}ms`);
       // Should be within 30% of the calibrated normal baseline
       const lowerBound = baseline * 0.7;
       const upperBound = baseline * 1.3;
@@ -245,13 +254,13 @@ export class AssertionLogic {
       const actualBalanceChange =
         (balanceAfterSpin ?? 0) - (balanceBeforeSpin ?? 0) + (bet ?? 0);
 
-      TestLogger.debug(`\nSlice ${sliceIndex}: ${sprite}`);
-      TestLogger.debug(`  Sprite shows: ${expectedMultiplier}x`);
-      TestLogger.debug(`  Config has: ${configuredMultiplier}x`);
-      TestLogger.debug(`  Expected win: ${expectedWin}`);
-      TestLogger.debug(`  Actual win (display): ${actualWin}`);
-      TestLogger.debug(`  Actual win (balance): ${actualBalanceChange}`);
-      TestLogger.debug(
+      this.logger.debug(`\nSlice ${sliceIndex}: ${sprite}`);
+      this.logger.debug(`  Sprite shows: ${expectedMultiplier}x`);
+      this.logger.debug(`  Config has: ${configuredMultiplier}x`);
+      this.logger.debug(`  Expected win: ${expectedWin}`);
+      this.logger.debug(`  Actual win (display): ${actualWin}`);
+      this.logger.debug(`  Actual win (balance): ${actualBalanceChange}`);
+      this.logger.debug(
         `  Balance: ${balanceBeforeSpin} -> ${balanceAfterSpin} (bet: ${bet})`
       );
 

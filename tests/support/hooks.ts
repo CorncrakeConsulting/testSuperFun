@@ -31,17 +31,22 @@ let context: BrowserContext;
 
 // Get browser type from environment variable (default: chromium)
 const BROWSER = process.env.BROWSER || "chromium";
+const HEADED = process.env.HEADED === "true";
 
 BeforeAll(async function () {
   // Launch browser once before all tests
   const browserType =
     BROWSER === "firefox" ? firefox : BROWSER === "webkit" ? webkit : chromium;
 
-  console.log(`🌐 Launching ${BROWSER} browser for Cucumber tests`);
+  console.log(
+    `🌐 Launching ${BROWSER} browser for Cucumber tests${
+      HEADED ? " (HEADED mode)" : ""
+    }`
+  );
 
   browser = await browserType.launch({
-    headless: true, // Set to false to see the browser
-    slowMo: 50, // Slow down actions for better visibility
+    headless: !HEADED, // Use environment variable
+    slowMo: HEADED ? 100 : 50, // Slower when visible for better observation
   });
 });
 
@@ -49,7 +54,7 @@ Before(async function (this: World) {
   // Create new context and page for each scenario
   context = await browser.newContext({
     baseURL: "http://localhost:3000",
-    viewport: { width: 1920, height: 1080 },
+    viewport: { width: 1280, height: 720 }, // Match Desktop Chrome viewport for proper UI rendering
     recordVideo: {
       dir: "./test-results/videos/",
     },
@@ -57,9 +62,17 @@ Before(async function (this: World) {
 
   this.page = await context.newPage();
 
-  // Set up console log capture
+  // Set up console log capture (filter out noise)
   this.page.on("console", (msg: { type: () => string; text: () => string }) => {
-    console.log(`Browser Console [${msg.type()}]:`, msg.text());
+    const text = msg.text();
+    // Filter out React DevTools and other noise
+    if (
+      text.includes("React DevTools") ||
+      text.includes("Download the React DevTools")
+    ) {
+      return; // Skip these messages
+    }
+    console.log(`Browser Console [${msg.type()}]:`, text);
   });
 
   // Set up error capture

@@ -2,17 +2,46 @@
 import { Page } from "@playwright/test";
 import { WheelGamePage } from "../pages/WheelGamePage";
 import { WheelState } from "../types/WheelState";
-import { TestLogger } from "../services/TestLogger";
+import { TestLogger, ITestLogger } from "../services/TestLogger";
+
+/**
+ * Configuration options for autoplay testing behavior
+ */
+export interface AutoplayTestingOptions {
+  /** Polling interval in milliseconds for checking wheel state (default: 50) */
+  pollInterval?: number;
+  /** Maximum wait time per spin in milliseconds (default: 8000) */
+  maxWaitTimePerSpin?: number;
+  /** Whether to track and report unexpected state transitions (default: true) */
+  trackStateTransitions?: boolean;
+  /** Whether to verify quick spin is enabled during autoplay (default: false) */
+  verifyQuickSpin?: boolean;
+  /** Logger instance for test output (optional, uses default if not provided) */
+  logger?: ITestLogger;
+}
 
 /**
  * Business logic for autoplay testing
  * Handles verification that autoplay triggers multiple spins
  */
 export class AutoplayTestingLogic {
+  private readonly pollInterval: number;
+  private readonly maxWaitTimePerSpin: number;
+  private readonly trackStateTransitions: boolean;
+  private readonly verifyQuickSpin: boolean;
+  private readonly logger: ITestLogger;
+
   constructor(
     private readonly page: Page,
-    private readonly wheelGamePage: WheelGamePage
-  ) {}
+    private readonly wheelGamePage: WheelGamePage,
+    options: AutoplayTestingOptions = {}
+  ) {
+    this.pollInterval = options.pollInterval ?? 50;
+    this.maxWaitTimePerSpin = options.maxWaitTimePerSpin ?? 8000;
+    this.trackStateTransitions = options.trackStateTransitions ?? true;
+    this.verifyQuickSpin = options.verifyQuickSpin ?? false;
+    this.logger = options.logger ?? TestLogger.getDefault();
+  }
 
   /**
    * Verify that the wheel completes the expected number of automatic spins
@@ -22,25 +51,38 @@ export class AutoplayTestingLogic {
    * @throws Error if the expected number of spins don't complete in time
    */
   async verifyAutoplaySpins(spinCount: number): Promise<void> {
+    // Verify quick spin is enabled if required
+    if (this.verifyQuickSpin) {
+      const isQuickSpinEnabled =
+        await this.wheelGamePage.state.isQuickSpinEnabled();
+      if (!isQuickSpinEnabled) {
+        throw new Error(
+          "Quick spin verification failed: Quick spin is not enabled"
+        );
+      }
+      this.logger.success("Quick spin is enabled as expected");
+    }
+
     let completedSpins = 0;
     let previousState = "";
     const unexpectedTransitions: string[] = [];
 
     const startTime = Date.now();
-    const maxWaitTime = spinCount * 8000; // 8 seconds per spin
+    const maxWaitTime = spinCount * this.maxWaitTimePerSpin;
 
-    TestLogger.spin(`Waiting for ${spinCount} autoplay spins...`);
+    this.logger.spin(`Waiting for ${spinCount} autoplay spins...`);
 
     while (completedSpins < spinCount && Date.now() - startTime < maxWaitTime) {
-      await this.page.waitForTimeout(50); // Fast polling
+      await this.page.waitForTimeout(this.pollInterval);
 
-      const currentState = await this.page.evaluate(() => {
-        const game = (globalThis as any).game;
-        return game?.wheel?._state || "";
-      });
+      const currentState = await this.wheelGamePage.getWheelState();
 
-      // Track and validate state transitions
-      if (currentState !== previousState && previousState !== "") {
+      // Track and validate state transitions (if enabled)
+      if (
+        this.trackStateTransitions &&
+        currentState !== previousState &&
+        previousState !== ""
+      ) {
         this.trackStateTransition(
           previousState,
           currentState,
@@ -57,7 +99,7 @@ export class AutoplayTestingLogic {
           currentState === WheelState.Breathe)
       ) {
         completedSpins++;
-        TestLogger.success(
+        this.logger.success(
           `Spin ${completedSpins}/${spinCount} completed (${previousState} → ${currentState})`
         );
       }
@@ -68,8 +110,8 @@ export class AutoplayTestingLogic {
     // Verify we detected the expected number of spins
     if (completedSpins < spinCount) {
       const errorMessage = `Expected ${spinCount} spins but only detected ${completedSpins} completed spins`;
-      if (unexpectedTransitions.length > 0) {
-        TestLogger.error(
+      if (this.trackStateTransitions && unexpectedTransitions.length > 0) {
+        this.logger.debug(
           `${errorMessage}. Unexpected transitions: ${unexpectedTransitions.join(
             ", "
           )}`
@@ -79,15 +121,15 @@ export class AutoplayTestingLogic {
     }
 
     // Report any unexpected transitions even on success
-    if (unexpectedTransitions.length > 0) {
-      TestLogger.warn(
+    if (this.trackStateTransitions && unexpectedTransitions.length > 0) {
+      this.logger.warn(
         `Autoplay completed but encountered ${
           unexpectedTransitions.length
         } unexpected state transitions: ${unexpectedTransitions.join(", ")}`
       );
     }
 
-    TestLogger.success(
+    this.logger.success(
       `All ${spinCount} autoplay spins completed successfully`
     );
   }
@@ -102,7 +144,7 @@ export class AutoplayTestingLogic {
     unexpectedTransitions: string[]
   ): void {
     const transition = `${previousState} → ${currentState}`;
-    TestLogger.debug(`State transition: ${transition}`);
+    this.logger.debug(`State transition: ${transition}`);
 
     // Track unexpected transitions (neither expected completion nor normal flow)
     const isExpectedCompletion =
@@ -124,7 +166,7 @@ export class AutoplayTestingLogic {
 
     if (!isExpectedCompletion && !isNormalFlow) {
       unexpectedTransitions.push(transition);
-      TestLogger.warn(`Unexpected state transition: ${transition}`);
+      this.logger.warn(`Unexpected state transition: ${transition}`);
     }
   }
 }
