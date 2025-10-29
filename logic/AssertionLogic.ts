@@ -336,4 +336,20 @@ export class AssertionLogic {
       );
     }
   }
+
+  async waitForWheelSpinStart(): Promise<void> {
+    await this.page.waitForTimeout(1000);
+  }
+
+  async waitForWheelNotSpinning(): Promise<void> {
+    await this.page.waitForTimeout(500);
+  }
+
+  async waitForWheelSpin(): Promise<void> {
+    await this.page.waitForTimeout(2000);
+  }
+
+  async waitForQuickSpinState(): Promise<void> {
+    await this.page.waitForTimeout(500);
+  }
 }

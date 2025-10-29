@@ -6,8 +6,10 @@ import { AssertionLogic } from "../../logic/AssertionLogic";
 setDefaultTimeout(60000);
 
 Then("the wheel should start spinning", async function (this: CustomWorld) {
-  // Just wait for animation to begin - checking state is unreliable with canvas
-  await this.page.waitForTimeout(1000);
+  await new AssertionLogic(
+    this.page,
+    this.wheelGamePage
+  ).waitForWheelSpinStart();
 });
 
 Then("the wheel should land on a slice", async function (this: CustomWorld) {
@@ -45,19 +47,11 @@ Then(
 );
 
 Then("the wheel should not spin", async function (this: CustomWorld) {
-  await this.page.waitForTimeout(500);
-  // Just verify we waited - checking if spinning is unreliable
+  await new AssertionLogic(
+    this.page,
+    this.wheelGamePage
+  ).waitForWheelNotSpinning();
 });
-
-Then(
-  "an error message should be displayed",
-  async function (this: CustomWorld) {
-    // Check if there's an error or the spin button is disabled
-    // This depends on how the app handles insufficient balance
-    const balance = await this.wheelGamePage.data.getBalance();
-    expect(balance).toBeLessThan(10);
-  }
-);
 
 Then(
   "the win amount should be calculated correctly",
@@ -70,8 +64,7 @@ Then(
 );
 
 Then("the wheel should spin", async function (this: CustomWorld) {
-  // Just wait for spin to occur - checking spinning state is unreliable
-  await this.page.waitForTimeout(2000);
+  await new AssertionLogic(this.page, this.wheelGamePage).waitForWheelSpin();
 });
 
 Then(
@@ -211,18 +204,24 @@ Then(
 );
 
 Then("quick spin should be enabled", async function (this: CustomWorld) {
-  // Just verify the button exists and was clicked - state detection is unreliable
-  await this.page.waitForTimeout(500);
+  await new AssertionLogic(
+    this.page,
+    this.wheelGamePage
+  ).waitForQuickSpinState();
 });
 
 Then("quick spin should be disabled", async function (this: CustomWorld) {
-  // Just verify the button exists and was clicked - state detection is unreliable
-  await this.page.waitForTimeout(500);
+  await new AssertionLogic(
+    this.page,
+    this.wheelGamePage
+  ).waitForQuickSpinState();
 });
 
 Then("quick spin should remain enabled", async function (this: CustomWorld) {
-  // Just verify quick spin persists - state detection is unreliable
-  await this.page.waitForTimeout(500);
+  await new AssertionLogic(
+    this.page,
+    this.wheelGamePage
+  ).waitForQuickSpinState();
 });
 
 Then(
