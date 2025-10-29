@@ -2,7 +2,7 @@
 
 import { Page } from "@playwright/test";
 import { WheelGamePage } from "../pages/WheelGamePage";
-import { DistributionTestingLogic } from "../logic/distributionTestingLogic";
+import { DistributionTestingLogic } from "../logic/DistributionTestingLogic";
 
 declare global {
   interface Window {

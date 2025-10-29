@@ -1,6 +1,7 @@
 import { Then, setDefaultTimeout } from "@cucumber/cucumber";
 import { expect } from "@playwright/test";
 import { CustomWorld } from "../support/world";
+import { AssertionLogic } from "../../logic/AssertionLogic";
 
 setDefaultTimeout(60000);
 
@@ -18,19 +19,15 @@ Then("the wheel should land on slice {int}", async function (this: CustomWorld) 
 });
 
 Then("the player balance should be updated", async function (this: CustomWorld) {
-  const currentBalance = await this.wheelGamePage.getBalance();
-  expect(currentBalance).toBeDefined();
-  // Balance should have changed from initial
-  expect(currentBalance).not.toBe(this.initialBalance);
+  const assertionLogic = new AssertionLogic(this.page, this.wheelGamePage);
+  await assertionLogic.assertBalanceUpdated(this.initialBalance);
 });
 
 Then(
   "the player balance should decrease by {int}",
   async function (this: CustomWorld, amount: number) {
-    await this.page.waitForTimeout(1000); // Wait for balance to update
-    const currentBalance = await this.wheelGamePage.getBalance();
-    const initialBalance = this.initialBalance ?? 0;
-    expect(currentBalance).toBe(initialBalance - amount);
+    const assertionLogic = new AssertionLogic(this.page, this.wheelGamePage);
+    await assertionLogic.assertBalanceDecreasedBy(this.initialBalance ?? 0, amount);
   }
 );
 
@@ -49,9 +46,8 @@ Then("an error message should be displayed", async function (this: CustomWorld) 
 Then(
   "the win amount should be calculated correctly",
   async function (this: CustomWorld) {
-    await this.wheelGamePage.waitForWheelToStop();
-    const winAmount = await this.wheelGamePage.getWin();
-    expect(winAmount).toBeGreaterThanOrEqual(0);
+    const assertionLogic = new AssertionLogic(this.page, this.wheelGamePage);
+    await assertionLogic.assertWinAmountCalculatedCorrectly();
   }
 );
 
@@ -67,113 +63,90 @@ Then(/^the wheel should complete (\d+) spins automatically$/, async function (th
 Then(
   "the bet amount should be {int}",
   async function (this: CustomWorld, expectedBet: number) {
-    const currentBet = await this.wheelGamePage.getBet();
-    expect(currentBet).toBe(expectedBet);
+    const assertionLogic = new AssertionLogic(this.page, this.wheelGamePage);
+    await assertionLogic.assertBetEquals(expectedBet);
   }
 );
 
 Then(
   "the bet amount should remain {int}",
   async function (this: CustomWorld, expectedBet: number) {
-    const currentBet = await this.wheelGamePage.getBet();
-    expect(currentBet).toBe(expectedBet);
+    const assertionLogic = new AssertionLogic(this.page, this.wheelGamePage);
+    await assertionLogic.assertBetEquals(expectedBet);
   }
 );
 
 Then(
   "the bet display should show {int}",
   async function (this: CustomWorld, expectedBet: number) {
-    const currentBet = await this.wheelGamePage.getBet();
-    expect(currentBet).toBe(expectedBet);
+    const assertionLogic = new AssertionLogic(this.page, this.wheelGamePage);
+    await assertionLogic.assertBetEquals(expectedBet);
   }
 );
 
 Then("autoplay should be enabled", async function (this: CustomWorld) {
-  const isEnabled = await this.wheelGamePage.isAutoplayEnabled();
-  expect(isEnabled).toBeTruthy();
+  const assertionLogic = new AssertionLogic(this.page, this.wheelGamePage);
+  await assertionLogic.assertAutoplayEnabled();
 });
 
 Then("autoplay should be disabled", async function (this: CustomWorld) {
-  const isEnabled = await this.wheelGamePage.isAutoplayEnabled();
-  expect(isEnabled).toBeFalsy();
+  const assertionLogic = new AssertionLogic(this.page, this.wheelGamePage);
+  await assertionLogic.assertAutoplayDisabled();
 });
 
 Then(
   "the autoplay display should show {string}",
   async function (this: CustomWorld, expectedText: string) {
-    const autoplayText = await this.wheelGamePage.getAutoplayText();
-    expect(autoplayText).toContain(expectedText);
+    const assertionLogic = new AssertionLogic(this.page, this.wheelGamePage);
+    await assertionLogic.assertAutoplayDisplayShows(expectedText);
   }
 );
 
 Then(
   "another spin should start automatically after the first completes",
   async function (this: CustomWorld) {
-    await this.wheelGamePage.waitForWheelToStop();
-    await this.page.waitForTimeout(1500); // Wait for autoplay delay
-    const isSpinning = await this.wheelGamePage.isWheelSpinning();
-    expect(isSpinning).toBeTruthy();
+    const assertionLogic = new AssertionLogic(this.page, this.wheelGamePage);
+    await assertionLogic.assertAnotherSpinStartsAutomatically();
   }
 );
 
 Then(
   "the balance display should show {int}",
   async function (this: CustomWorld, expectedBalance: number) {
-    const currentBalance = await this.wheelGamePage.getBalance();
-    expect(currentBalance).toBe(expectedBalance);
+    const assertionLogic = new AssertionLogic(this.page, this.wheelGamePage);
+    await assertionLogic.assertBalanceEquals(expectedBalance);
   }
 );
 
 Then(
   "the balance should decrease by {int}",
   async function (this: CustomWorld, amount: number) {
-    await this.page.waitForTimeout(1000);
-    const currentBalance = await this.wheelGamePage.getBalance();
-    const initialBalance = this.initialBalance ?? 0;
-    expect(currentBalance).toBe(initialBalance - amount);
+    const assertionLogic = new AssertionLogic(this.page, this.wheelGamePage);
+    await assertionLogic.assertBalanceDecreasedBy(this.initialBalance ?? 0, amount);
   }
 );
 
 Then(
   "the balance should increase by the win amount",
   async function (this: CustomWorld) {
-    await this.wheelGamePage.waitForWheelToStop();
-    await this.page.waitForTimeout(1000);
-    const winAmount = await this.wheelGamePage.getWin();
-    const currentBalance = await this.wheelGamePage.getBalance();
-    const initialBalance = this.initialBalance ?? 0;
-    expect(winAmount).toBeGreaterThan(0);
-    expect(currentBalance).toBeGreaterThan(initialBalance);
+    const assertionLogic = new AssertionLogic(this.page, this.wheelGamePage);
+    await assertionLogic.assertBalanceIncreasedByWin(this.initialBalance ?? 0);
   }
 );
 
 Then(
   "the balance should decrease after the first spin",
   async function (this: CustomWorld) {
-    // Wait for first spin to complete
-    await this.page.waitForTimeout(3000);
-    const currentBalance = await this.wheelGamePage.getBalance();
-    const initialBalance = this.initialBalance ?? 0;
-    // Balance should be less than initial (5000 - 50 bet at minimum)
-    expect(currentBalance).toBeLessThan(initialBalance);
-    // Store balance after first spin
-    this.initialBalance = currentBalance;
+    const assertionLogic = new AssertionLogic(this.page, this.wheelGamePage);
+    this.initialBalance = await assertionLogic.assertBalanceDecreasedAfterFirstSpin(this.initialBalance ?? 0);
   }
 );
 
 Then(
   "the balance should decrease again after autoplay triggers another spin",
   async function (this: CustomWorld) {
-    // Wait longer for autoplay to trigger second spin and complete
-    // Autoplay has a delay between spins + spin duration
-    await this.page.waitForTimeout(8000);
-    const currentBalance = await this.wheelGamePage.getBalance();
-    const balanceAfterFirstSpin = this.initialBalance ?? 0;
-
-    // The key test: after 2 spins with 50 bet each, we've wagered 100 total
-    // So balance should be less than 5000 (initial) - unless massive wins
-    // More reliable: check that balance changed from after first spin
-    expect(currentBalance).not.toBe(balanceAfterFirstSpin);
+    const assertionLogic = new AssertionLogic(this.page, this.wheelGamePage);
+    await assertionLogic.assertBalanceChangedAfterAutoplaySecondSpin(this.initialBalance ?? 0);
   }
 );
 
@@ -193,7 +166,51 @@ Then("quick spin should remain enabled", async function (this: CustomWorld) {
 });
 
 Then("the wheel should spin faster than normal", async function (this: CustomWorld) {
-  // We can't easily measure animation speed in headless mode
-  // Just verify that spin completes
-  await this.page.waitForTimeout(1000);
+  const assertionLogic = new AssertionLogic(this.page, this.wheelGamePage);
+  await assertionLogic.assertQuickSpinFasterThanNormal();
+});
+
+Then("the wheel should spin at normal speed", async function (this: CustomWorld) {
+  const assertionLogic = new AssertionLogic(this.page, this.wheelGamePage);
+  await assertionLogic.assertNormalSpinSpeed(this.spinStartTime);
+  this.spinStartTime = undefined; // Clear after use
+});
+
+Then("the normal spin should complete in less than 10 seconds", async function (this: CustomWorld) {
+  const assertionLogic = new AssertionLogic(this.page, this.wheelGamePage);
+  await assertionLogic.assertNormalSpinWithinMaxDuration(10000);
+});
+
+Then("the quick spin should complete in less than 4 seconds", async function (this: CustomWorld) {
+  const assertionLogic = new AssertionLogic(this.page, this.wheelGamePage);
+  await assertionLogic.assertQuickSpinWithinMaxDuration(4000);
+});
+
+Then("all spins should be quick", async function (this: CustomWorld) {
+  const assertionLogic = new AssertionLogic(this.page, this.wheelGamePage);
+  await assertionLogic.assertAllSpinsQuick(2, this.quickSpinBaseline);
+});
+
+Then("the wheel should return to normal speed", async function (this: CustomWorld) {
+  const assertionLogic = new AssertionLogic(this.page, this.wheelGamePage);
+  await assertionLogic.assertReturnToNormalSpeed(this.spinStartTime, this.normalSpinBaseline);
+  this.spinStartTime = undefined;
+});
+
+Then("all spins should be faster than normal", async function (this: CustomWorld) {
+  const assertionLogic = new AssertionLogic(this.page, this.wheelGamePage);
+  await assertionLogic.assertAllSpinsFasterThanNormal(3);
+});
+
+Then("all slice winnings should match their sprite multipliers", async function (this: CustomWorld) {
+  const assertionLogic = new AssertionLogic(this.page, this.wheelGamePage);
+  assertionLogic.assertAllSliceWinningsMatchSprites(
+    this.multiplierTestResults || [],
+    this.attach.bind(this)
+  );
+});
+
+Then("all wheel slices should have correct sprite-to-multiplier mappings", async function (this: CustomWorld) {
+  const assertionLogic = new AssertionLogic(this.page, this.wheelGamePage);
+  await assertionLogic.assertSpriteToMultiplierMappings();
 });

@@ -9,7 +9,15 @@ import {
 } from "@cucumber/cucumber";
 import { chromium, Browser, BrowserContext } from "@playwright/test";
 
-setDefaultTimeout(300000); // 5 minutes for distribution tests
+// Calculate timeout dynamically based on expected number of spins
+// Maximum expected spins is 1000, at ~0.5 spins/sec with quick spin, plus 50% buffer
+const MAX_EXPECTED_SPINS = 1000;
+const SPINS_PER_SECOND = 0.5;
+const BUFFER_MULTIPLIER = 1.5;
+const dynamicTimeout = Math.ceil((MAX_EXPECTED_SPINS / SPINS_PER_SECOND) * BUFFER_MULTIPLIER * 1000);
+
+console.log(`⏱️  Setting global timeout to ${Math.ceil(dynamicTimeout/1000/60)} minutes for up to ${MAX_EXPECTED_SPINS} spins`);
+setDefaultTimeout(dynamicTimeout);
 
 let browser: Browser;
 let context: BrowserContext;
@@ -46,16 +54,17 @@ Before(async function (this: World) {
 });
 
 After(async function (this: World, scenario) {
-  // Take screenshot on failure
   if (scenario.result?.status === Status.FAILED) {
+    // Capture and attach screenshot to report for all failures
+    const screenshot = await this.page.screenshot({ fullPage: true });
+    this.attach(screenshot, "image/png");
+    
+    // Also save to disk for external review
     const scenarioName = scenario.pickle.name.replaceAll(" ", "-");
-    const screenshot = await this.page.screenshot({
+    await this.page.screenshot({
       path: `./test-results/screenshots/failed-${scenarioName}-${Date.now()}.png`,
       fullPage: true,
     });
-
-    // Attach screenshot to Cucumber report
-    this.attach(screenshot, "image/png");
   }
 
   // Close page and context after each scenario

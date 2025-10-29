@@ -25,8 +25,24 @@ Feature: Quick Spin Mode
     When the player clicks the spin button
     Then the wheel should spin faster than normal
 
-  @skip @wip
-  Scenario: Quick spin persists across spins
-    Given quick spin is enabled
-    When the player spins the wheel 3 times
-    Then quick spin should remain enabled
+  @regression @quickspin @performance
+  Scenario: Spin animation duration meets performance requirements
+    Given the player has placed a bet of 50
+    When the player clicks the spin button
+    Then the normal spin should complete in less than 10 seconds
+    When the player enables quick spin
+    And the player clicks the spin button
+    Then the quick spin should complete in less than 4 seconds
+
+  @regression @quickspin
+  Scenario: Quick spin can be toggled during gameplay
+    Given the player has placed a bet of 50
+    When the player clicks the spin button to calibrate normal speed
+    When the player enables quick spin
+    And the player clicks the spin button to calibrate quick speed
+    And the player spins the wheel 2 times
+    Then all spins should be quick
+    When the player disables quick spin
+    And the player clicks the spin button
+    Then the wheel should return to normal speed
+

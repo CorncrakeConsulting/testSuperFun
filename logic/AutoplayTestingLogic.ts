@@ -1,3 +1,4 @@
+/// <reference path="../types/global.d.ts" />
 import { Page } from "@playwright/test";
 import { WheelGamePage } from "../pages/WheelGamePage";
 
@@ -18,13 +19,6 @@ export class AutoplayTestingLogic {
    * @param spinCount - Expected number of spins to complete
    * @throws Error if the expected number of spins don't complete in time
    */
-  /**
-   * Verify that the wheel completes the expected number of automatic spins
-   * Tracks game state transitions to count completed spins
-   * 
-   * @param spinCount - Expected number of spins to complete
-   * @throws Error if the expected number of spins don't complete in time
-   */
   async verifyAutoplaySpins(spinCount: number): Promise<void> {
     let completedSpins = 0;
     let lastState = '';
@@ -36,6 +30,7 @@ export class AutoplayTestingLogic {
       await this.page.waitForTimeout(100);
       
       const currentState = await this.page.evaluate(() => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const game = (globalThis as any).game;
         return game?.wheel?._state || '';
       });

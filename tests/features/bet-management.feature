@@ -21,7 +21,20 @@ Feature: Bet Management
     When the player clicks the decrement bet button
     Then the bet amount should remain 10
 
-  Scenario: Bet adjustment updates display
-    Given the player bet is 50
-    When the player clicks the increment bet button
-    Then the bet display should show 60
+  Scenario: Cannot increase bet above balance
+    Given the player balance is set to 100 using test hooks
+    And the player bet is 50
+    When the player clicks the increment bet button 10 times
+    Then the bet amount should be 100
+
+  Scenario: Cannot spin when bet exceeds balance
+    Given the player balance is set to 5 using test hooks
+    And the player bet is 10
+    When the player clicks the spin button
+    Then the wheel should not spin
+
+  Scenario: Cannot autoplay when bet exceeds balance
+    Given the player balance is set to 5 using test hooks
+    And the player bet is 10
+    When the player clicks the autoplay button
+    Then the wheel should not spin
