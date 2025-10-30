@@ -1,5 +1,4 @@
-import { test, expect } from "@playwright/test";
-import { Page } from "@playwright/test";
+import { test, expect, Page } from "@playwright/test";
 import { DataTable } from "@cucumber/cucumber";
 import {
   BalanceTestingLogic,
@@ -23,39 +22,67 @@ function createMockDataTable(rows: any[]): DataTable {
   } as any;
 }
 
+// Helper to create BalanceTestingLogic with standard mocks for tests that don't need customization
+function createLogicWithStandardMocks(spriteData?: {
+  sprite: string;
+  winMultiplier: number;
+}): BalanceTestingLogic {
+  const data = spriteData ?? { sprite: "10x.png", winMultiplier: 10 };
+  const mockPage = createMockPageWithEvaluate(data) as Page;
+  const mockWheelGamePage = createMockWheelGamePageWithData() as WheelGamePage;
+  return new BalanceTestingLogic(mockPage, mockWheelGamePage);
+}
+
+// Helper to create BalanceTestingLogic with custom balance/win/bet scenario
+function createLogicWithCustomScenario(
+  spriteData: { sprite: string; winMultiplier: number },
+  balance: number,
+  win: number,
+  bet: number
+): BalanceTestingLogic {
+  const mockPage = createMockPageWithEvaluate(spriteData) as Page;
+  const mockWheelGamePage = {
+    data: {
+      getBalance: async () => balance,
+      getWin: async () => win,
+      getBet: async () => bet,
+    },
+    testHooks: {
+      setWheelLandingIndex: async () => {},
+    },
+    spin: async () => {},
+    state: {
+      waitForSpinComplete: async () => {},
+    },
+  } as any as WheelGamePage;
+  return new BalanceTestingLogic(mockPage, mockWheelGamePage);
+}
+
 test.describe("BalanceTestingLogic Unit Tests", () => {
   test.describe("extractMultiplierFromSprite", () => {
     test("should extract integer multiplier from sprite filename", () => {
-      const mockPage = createMockPageWithEvaluate({ sprite: "10x.png", winMultiplier: 10 }) as Page;
-      const mockWheelGamePage = createMockWheelGamePageWithData() as WheelGamePage;
-      const logic = new BalanceTestingLogic(mockPage, mockWheelGamePage);
+      const logic = createLogicWithStandardMocks();
 
       const result = (logic as any).extractMultiplierFromSprite("10x.png");
       expect(result).toBe(10);
     });
 
     test("should extract decimal multiplier from sprite filename", () => {
-      const mockPage = createMockPageWithEvaluate({ sprite: "10x.png", winMultiplier: 10 }) as Page;
-      const mockWheelGamePage = createMockWheelGamePageWithData() as WheelGamePage;
-      const logic = new BalanceTestingLogic(mockPage, mockWheelGamePage);
+      const logic = createLogicWithStandardMocks();
 
       const result = (logic as any).extractMultiplierFromSprite("0.5x.png");
       expect(result).toBe(0.5);
     });
 
     test("should return null for invalid sprite filename", () => {
-      const mockPage = createMockPageWithEvaluate({ sprite: "10x.png", winMultiplier: 10 }) as Page;
-      const mockWheelGamePage = createMockWheelGamePageWithData() as WheelGamePage;
-      const logic = new BalanceTestingLogic(mockPage, mockWheelGamePage);
+      const logic = createLogicWithStandardMocks();
 
       const result = (logic as any).extractMultiplierFromSprite("invalid.png");
       expect(result).toBeNull();
     });
 
     test("should handle sprite without .png extension", () => {
-      const mockPage = createMockPageWithEvaluate({ sprite: "10x.png", winMultiplier: 10 }) as Page;
-      const mockWheelGamePage = createMockWheelGamePageWithData() as WheelGamePage;
-      const logic = new BalanceTestingLogic(mockPage, mockWheelGamePage);
+      const logic = createLogicWithStandardMocks();
 
       const result = (logic as any).extractMultiplierFromSprite("5x");
       expect(result).toBeNull();
@@ -64,9 +91,7 @@ test.describe("BalanceTestingLogic Unit Tests", () => {
 
   test.describe("validateSpriteConfiguration", () => {
     test("should not add errors when all multipliers match", () => {
-      const mockPage = createMockPageWithEvaluate({ sprite: "10x.png", winMultiplier: 10 }) as Page;
-      const mockWheelGamePage = createMockWheelGamePageWithData() as WheelGamePage;
-      const logic = new BalanceTestingLogic(mockPage, mockWheelGamePage);
+      const logic = createLogicWithStandardMocks();
       const errors: string[] = [];
 
       (logic as any).validateSpriteConfiguration(0, 10, 10, 10, errors);
@@ -75,9 +100,7 @@ test.describe("BalanceTestingLogic Unit Tests", () => {
     });
 
     test("should add error when actual sprite doesn't match expected", () => {
-      const mockPage = createMockPageWithEvaluate({ sprite: "10x.png", winMultiplier: 10 }) as Page;
-      const mockWheelGamePage = createMockWheelGamePageWithData() as WheelGamePage;
-      const logic = new BalanceTestingLogic(mockPage, mockWheelGamePage);
+      const logic = createLogicWithStandardMocks();
       const errors: string[] = [];
 
       (logic as any).validateSpriteConfiguration(0, 5, 10, 5, errors);
@@ -87,9 +110,7 @@ test.describe("BalanceTestingLogic Unit Tests", () => {
     });
 
     test("should add error when sprite doesn't match configured multiplier", () => {
-      const mockPage = createMockPageWithEvaluate({ sprite: "10x.png", winMultiplier: 10 }) as Page;
-      const mockWheelGamePage = createMockWheelGamePageWithData() as WheelGamePage;
-      const logic = new BalanceTestingLogic(mockPage, mockWheelGamePage);
+      const logic = createLogicWithStandardMocks();
       const errors: string[] = [];
 
       (logic as any).validateSpriteConfiguration(7, 5, 5, 4, errors);
@@ -99,9 +120,7 @@ test.describe("BalanceTestingLogic Unit Tests", () => {
     });
 
     test("should add multiple errors when both validations fail", () => {
-      const mockPage = createMockPageWithEvaluate({ sprite: "10x.png", winMultiplier: 10 }) as Page;
-      const mockWheelGamePage = createMockWheelGamePageWithData() as WheelGamePage;
-      const logic = new BalanceTestingLogic(mockPage, mockWheelGamePage);
+      const logic = createLogicWithStandardMocks();
       const errors: string[] = [];
 
       (logic as any).validateSpriteConfiguration(7, 5, 10, 4, errors);
@@ -114,40 +133,44 @@ test.describe("BalanceTestingLogic Unit Tests", () => {
 
   test.describe("validateWinAndBalance", () => {
     test("should not add errors when win and balance are correct", () => {
-      const mockPage = createMockPageWithEvaluate({ sprite: "10x.png", winMultiplier: 10 }) as Page;
-      const mockWheelGamePage = createMockWheelGamePageWithData() as WheelGamePage;
-      const logic = new BalanceTestingLogic(mockPage, mockWheelGamePage);
+      const logic = createLogicWithStandardMocks();
       const errors: string[] = [];
 
       // balanceBefore: 1000, bet: 100, actualWin: 200
       // expectedBalance: 1000 - 100 + 200 = 1100
       (logic as any).validateWinAndBalance(
-        0,
-        200,
-        200,
-        1000,
-        1100,
-        100,
-        errors
+        {
+          sliceIndex: 0,
+          actualSpriteMultiplier: 2,
+          configuredMultiplier: 2,
+          expectedWin: 200,
+          actualWin: 200,
+          balanceBefore: 1000,
+          balanceAfter: 1100,
+          errors,
+        },
+        100
       );
 
       expect(errors).toHaveLength(0);
     });
 
     test("should add error when actual win doesn't match expected", () => {
-      const mockPage = createMockPageWithEvaluate({ sprite: "10x.png", winMultiplier: 10 }) as Page;
-      const mockWheelGamePage = createMockWheelGamePageWithData() as WheelGamePage;
-      const logic = new BalanceTestingLogic(mockPage, mockWheelGamePage);
+      const logic = createLogicWithStandardMocks();
       const errors: string[] = [];
 
       (logic as any).validateWinAndBalance(
-        0,
-        150,
-        200,
-        1000,
-        1050,
-        100,
-        errors
+        {
+          sliceIndex: 0,
+          actualSpriteMultiplier: 1.5,
+          configuredMultiplier: 2,
+          expectedWin: 200,
+          actualWin: 150,
+          balanceBefore: 1000,
+          balanceAfter: 1050,
+          errors,
+        },
+        100
       );
 
       expect(errors).toHaveLength(1);
@@ -155,21 +178,23 @@ test.describe("BalanceTestingLogic Unit Tests", () => {
     });
 
     test("should add error when balance change is incorrect", () => {
-      const mockPage = createMockPageWithEvaluate({ sprite: "10x.png", winMultiplier: 10 }) as Page;
-      const mockWheelGamePage = createMockWheelGamePageWithData() as WheelGamePage;
-      const logic = new BalanceTestingLogic(mockPage, mockWheelGamePage);
+      const logic = createLogicWithStandardMocks();
       const errors: string[] = [];
 
       // balanceBefore: 1000, bet: 100, actualWin: 200
       // expectedBalance: 1000 - 100 + 200 = 1100, but balanceAfter is 1200
       (logic as any).validateWinAndBalance(
-        0,
-        200,
-        200,
-        1000,
-        1200,
-        100,
-        errors
+        {
+          sliceIndex: 0,
+          actualSpriteMultiplier: 2,
+          configuredMultiplier: 2,
+          expectedWin: 200,
+          actualWin: 200,
+          balanceBefore: 1000,
+          balanceAfter: 1200,
+          errors,
+        },
+        100
       );
 
       expect(errors).toHaveLength(1);
@@ -177,34 +202,46 @@ test.describe("BalanceTestingLogic Unit Tests", () => {
     });
 
     test("should handle losing spin (zero win)", () => {
-      const mockPage = createMockPageWithEvaluate({ sprite: "10x.png", winMultiplier: 10 }) as Page;
-      const mockWheelGamePage = createMockWheelGamePageWithData() as WheelGamePage;
-      const logic = new BalanceTestingLogic(mockPage, mockWheelGamePage);
+      const logic = createLogicWithStandardMocks();
       const errors: string[] = [];
 
       // balanceBefore: 1000, bet: 100, actualWin: 0
       // expectedBalance: 1000 - 100 + 0 = 900
-      (logic as any).validateWinAndBalance(2, 0, 0, 1000, 900, 100, errors);
+      (logic as any).validateWinAndBalance(
+        {
+          sliceIndex: 2,
+          actualSpriteMultiplier: 0,
+          configuredMultiplier: 0,
+          expectedWin: 0,
+          actualWin: 0,
+          balanceBefore: 1000,
+          balanceAfter: 900,
+          errors,
+        },
+        100
+      );
 
       expect(errors).toHaveLength(0);
     });
 
     test("should handle break-even spin (1x multiplier)", () => {
-      const mockPage = createMockPageWithEvaluate({ sprite: "10x.png", winMultiplier: 10 }) as Page;
-      const mockWheelGamePage = createMockWheelGamePageWithData() as WheelGamePage;
-      const logic = new BalanceTestingLogic(mockPage, mockWheelGamePage);
+      const logic = createLogicWithStandardMocks();
       const errors: string[] = [];
 
       // balanceBefore: 1000, bet: 100, actualWin: 100 (1x)
       // expectedBalance: 1000 - 100 + 100 = 1000
       (logic as any).validateWinAndBalance(
-        4,
-        100,
-        100,
-        1000,
-        1000,
-        100,
-        errors
+        {
+          sliceIndex: 4,
+          actualSpriteMultiplier: 1,
+          configuredMultiplier: 1,
+          expectedWin: 100,
+          actualWin: 100,
+          balanceBefore: 1000,
+          balanceAfter: 1000,
+          errors,
+        },
+        100
       );
 
       expect(errors).toHaveLength(0);
@@ -213,9 +250,7 @@ test.describe("BalanceTestingLogic Unit Tests", () => {
 
   test.describe("parseDataTableToSliceTestData", () => {
     test("should parse single row DataTable correctly", () => {
-      const mockPage = createMockPageWithEvaluate({ sprite: "10x.png", winMultiplier: 10 }) as Page;
-      const mockWheelGamePage = createMockWheelGamePageWithData() as WheelGamePage;
-      const logic = new BalanceTestingLogic(mockPage, mockWheelGamePage);
+      const logic = createLogicWithStandardMocks();
 
       const dataTable = createMockDataTable([
         { slice_index: "0", sprite_multiplier: "10", expected_win: "1000" },
@@ -232,9 +267,7 @@ test.describe("BalanceTestingLogic Unit Tests", () => {
     });
 
     test("should parse multiple rows DataTable correctly", () => {
-      const mockPage = createMockPageWithEvaluate({ sprite: "10x.png", winMultiplier: 10 }) as Page;
-      const mockWheelGamePage = createMockWheelGamePageWithData() as WheelGamePage;
-      const logic = new BalanceTestingLogic(mockPage, mockWheelGamePage);
+      const logic = createLogicWithStandardMocks();
 
       const dataTable = createMockDataTable([
         { slice_index: "0", sprite_multiplier: "10", expected_win: "1000" },
@@ -251,9 +284,7 @@ test.describe("BalanceTestingLogic Unit Tests", () => {
     });
 
     test("should parse decimal multipliers correctly", () => {
-      const mockPage = createMockPageWithEvaluate({ sprite: "10x.png", winMultiplier: 10 }) as Page;
-      const mockWheelGamePage = createMockWheelGamePageWithData() as WheelGamePage;
-      const logic = new BalanceTestingLogic(mockPage, mockWheelGamePage);
+      const logic = createLogicWithStandardMocks();
 
       const dataTable = createMockDataTable([
         { slice_index: "5", sprite_multiplier: "0.5", expected_win: "50" },
@@ -265,9 +296,7 @@ test.describe("BalanceTestingLogic Unit Tests", () => {
     });
 
     test("should handle radix correctly for parseInt", () => {
-      const mockPage = createMockPageWithEvaluate({ sprite: "10x.png", winMultiplier: 10 }) as Page;
-      const mockWheelGamePage = createMockWheelGamePageWithData() as WheelGamePage;
-      const logic = new BalanceTestingLogic(mockPage, mockWheelGamePage);
+      const logic = createLogicWithStandardMocks();
 
       const dataTable = createMockDataTable([
         { slice_index: "08", sprite_multiplier: "10", expected_win: "0100" },
@@ -283,27 +312,12 @@ test.describe("BalanceTestingLogic Unit Tests", () => {
 
   test.describe("validateSliceAndSpin - Success Cases", () => {
     test("should return no errors for valid slice configuration", async () => {
-      const mockPage = createMockPageWithEvaluate({
-        sprite: "10x.png",
-        winMultiplier: 10,
-      }) as Page;
-
-      const mockWheelGamePage = {
-        data: {
-          getBalance: async () => 1900, // Balance after spin
-          getWin: async () => 1000,
-          getBet: async () => 100,
-        },
-        testHooks: {
-          setWheelLandingIndex: async () => {},
-        },
-        spin: async () => {},
-        state: {
-          waitForSpinComplete: async () => {},
-        },
-      } as any as WheelGamePage;
-
-      const logic = new BalanceTestingLogic(mockPage, mockWheelGamePage);
+      const logic = createLogicWithCustomScenario(
+        { sprite: "10x.png", winMultiplier: 10 },
+        1900, // Balance after spin
+        1000, // Win
+        100 // Bet
+      );
 
       const testData: SliceTestData = {
         sliceIndex: 0,
@@ -321,27 +335,12 @@ test.describe("BalanceTestingLogic Unit Tests", () => {
     });
 
     test("should handle zero multiplier slice", async () => {
-      const mockPage = createMockPageWithEvaluate({
-        sprite: "0x.png",
-        winMultiplier: 0,
-      }) as Page;
-
-      const mockWheelGamePage = {
-        data: {
-          getBalance: async () => 900, // Balance after losing spin
-          getWin: async () => 0,
-          getBet: async () => 100,
-        },
-        testHooks: {
-          setWheelLandingIndex: async () => {},
-        },
-        spin: async () => {},
-        state: {
-          waitForSpinComplete: async () => {},
-        },
-      } as any as WheelGamePage;
-
-      const logic = new BalanceTestingLogic(mockPage, mockWheelGamePage);
+      const logic = createLogicWithCustomScenario(
+        { sprite: "0x.png", winMultiplier: 0 },
+        900, // Balance after losing spin
+        0, // Win
+        100 // Bet
+      );
 
       const testData: SliceTestData = {
         sliceIndex: 2,
@@ -385,27 +384,12 @@ test.describe("BalanceTestingLogic Unit Tests", () => {
     });
 
     test("should detect sprite mismatch (known game bug)", async () => {
-      const mockPage = createMockPageWithEvaluate({
-        sprite: "5x.png",
-        winMultiplier: 4, // Bug: shows 5x but configured as 4x
-      }) as Page;
-
-      const mockWheelGamePage = {
-        data: {
-          getBalance: async () => 1300, // Balance after 4x payout
-          getWin: async () => 400, // 4x payout
-          getBet: async () => 100,
-        },
-        testHooks: {
-          setWheelLandingIndex: async () => {},
-        },
-        spin: async () => {},
-        state: {
-          waitForSpinComplete: async () => {},
-        },
-      } as any as WheelGamePage;
-
-      const logic = new BalanceTestingLogic(mockPage, mockWheelGamePage);
+      const logic = createLogicWithCustomScenario(
+        { sprite: "5x.png", winMultiplier: 4 }, // Bug: shows 5x but configured as 4x
+        1300, // Balance after 4x payout
+        400, // 4x payout
+        100 // Bet
+      );
 
       const testData: SliceTestData = {
         sliceIndex: 7,
@@ -480,27 +464,12 @@ test.describe("BalanceTestingLogic Unit Tests", () => {
     });
 
     test("should throw error when validation fails", async () => {
-      const mockPage = createMockPageWithEvaluate({
-        sprite: "10x.png",
-        winMultiplier: 10,
-      }) as Page;
-
-      const mockWheelGamePage = {
-        data: {
-          getBalance: async () => 1800, // Wrong balance
-          getWin: async () => 1000,
-          getBet: async () => 100,
-        },
-        testHooks: {
-          setWheelLandingIndex: async () => {},
-        },
-        spin: async () => {},
-        state: {
-          waitForSpinComplete: async () => {},
-        },
-      } as any as WheelGamePage;
-
-      const logic = new BalanceTestingLogic(mockPage, mockWheelGamePage);
+      const logic = createLogicWithCustomScenario(
+        { sprite: "10x.png", winMultiplier: 10 },
+        1800, // Wrong balance
+        1000, // Win
+        100 // Bet
+      );
 
       const testData: SliceTestData[] = [
         { sliceIndex: 0, expectedSpriteMultiplier: 10, expectedWin: 1000 },

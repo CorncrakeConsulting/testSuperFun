@@ -35,102 +35,79 @@ test.describe("SharedDistributionStore", () => {
   });
 
   test.describe("setDistributionData", () => {
-    test("should store distribution data for a feature tag", () => {
+    test("should store distribution data", () => {
       const data = createMockDistributionData();
-      const featureTag = "test-feature";
 
-      store.setDistributionData(data, featureTag);
+      store.setDistributionData(data);
 
-      const retrieved = store.getDistributionData(featureTag);
+      const retrieved = store.getDistributionData();
       expect(retrieved).toEqual(data);
     });
 
     test("should log debug message when storing data", () => {
       const data = createMockDistributionData();
-      const featureTag = "test-feature";
 
-      store.setDistributionData(data, featureTag);
+      store.setDistributionData(data);
 
       expect(mockLogger.calls.debug.length).toBe(1);
-      expect(mockLogger.calls.debug[0][0]).toBe(
-        `📦 Stored distribution data for feature: ${featureTag}`
-      );
+      expect(mockLogger.calls.debug[0][0]).toBe(`📦 Stored distribution data`);
     });
 
-    test("should store multiple feature tags independently", () => {
-      const data1 = createMockDistributionData(1000);
-      const data2 = createMockDistributionData(2000);
-
-      store.setDistributionData(data1, "feature1");
-      store.setDistributionData(data2, "feature2");
-
-      expect(store.getDistributionData("feature1")).toEqual(data1);
-      expect(store.getDistributionData("feature2")).toEqual(data2);
-    });
-
-    test("should overwrite existing data for same feature tag", () => {
+    test("should overwrite existing data", () => {
       const originalData = createMockDistributionData(1000);
       const updatedData = createMockDistributionData(2000);
-      const featureTag = "test-feature";
 
-      store.setDistributionData(originalData, featureTag);
-      store.setDistributionData(updatedData, featureTag);
+      store.setDistributionData(originalData);
+      store.setDistributionData(updatedData);
 
-      const retrieved = store.getDistributionData(featureTag);
+      const retrieved = store.getDistributionData();
       expect(retrieved).toEqual(updatedData);
       expect(retrieved?.totalSpins).toBe(2000);
     });
   });
 
   test.describe("getDistributionData", () => {
-    test("should return null when no data exists for feature tag", () => {
-      const result = store.getDistributionData("non-existent");
+    test("should return null when no data exists", () => {
+      const result = store.getDistributionData();
 
       expect(result).toBeNull();
     });
 
     test("should log debug message when no data found", () => {
-      const featureTag = "non-existent";
-
-      store.getDistributionData(featureTag);
+      store.getDistributionData();
 
       expect(mockLogger.calls.debug.length).toBe(1);
-      expect(mockLogger.calls.debug[0][0]).toBe(
-        `📦 No stored data found for feature: ${featureTag}`
-      );
+      expect(mockLogger.calls.debug[0][0]).toBe(`📦 No stored data found`);
     });
 
-    test("should return stored data for valid feature tag", () => {
+    test("should return stored data", () => {
       const data = createMockDistributionData();
-      const featureTag = "test-feature";
 
-      store.setDistributionData(data, featureTag);
-      const retrieved = store.getDistributionData(featureTag);
+      store.setDistributionData(data);
+      const retrieved = store.getDistributionData();
 
       expect(retrieved).toEqual(data);
     });
 
     test("should log debug message when data retrieved", () => {
       const data = createMockDistributionData();
-      const featureTag = "test-feature";
 
-      store.setDistributionData(data, featureTag);
+      store.setDistributionData(data);
       const callCountBeforeGet = mockLogger.calls.debug.length;
-      store.getDistributionData(featureTag);
+      store.getDistributionData();
 
       // Should have one more debug call after get
       expect(mockLogger.calls.debug.length).toBe(callCountBeforeGet + 1);
       expect(mockLogger.calls.debug[callCountBeforeGet][0]).toBe(
-        `📦 Retrieved stored distribution data for feature: ${featureTag}`
+        `📦 Retrieved stored distribution data`
       );
     });
 
     test("should return same data object that was stored", () => {
       const data = createMockDistributionData();
-      const featureTag = "test-feature";
 
-      store.setDistributionData(data, featureTag);
-      const retrieved = store.getDistributionData(featureTag);
+      store.setDistributionData(data);
+      const retrieved = store.getDistributionData();
 
       expect(retrieved).toBe(data); // Same reference
     });
@@ -188,8 +165,8 @@ test.describe("SharedDistributionStore", () => {
         ],
       };
 
-      store.setDistributionData(complexData, "complex-feature");
-      const retrieved = store.getDistributionData("complex-feature");
+      store.setDistributionData(complexData);
+      const retrieved = store.getDistributionData();
 
       expect(retrieved).toEqual(complexData);
       expect(retrieved?.testSets).toHaveLength(2);
@@ -198,43 +175,34 @@ test.describe("SharedDistributionStore", () => {
 
   test.describe("integration scenarios", () => {
     test("should handle sequential store and retrieve operations", () => {
-      const features = ["feature1", "feature2", "feature3"];
-      const dataSet = features.map((_, i) =>
-        createMockDistributionData(1000 * (i + 1))
-      );
-
-      // Store all
-      features.forEach((feature, i) => {
-        store.setDistributionData(dataSet[i], feature);
-      });
-
-      // Retrieve all
-      features.forEach((feature, i) => {
-        const retrieved = store.getDistributionData(feature);
-        expect(retrieved).toEqual(dataSet[i]);
-      });
-    });
-
-    test("should maintain data isolation between features", () => {
       const data1 = createMockDistributionData(1000);
       const data2 = createMockDistributionData(2000);
+      const data3 = createMockDistributionData(3000);
 
-      store.setDistributionData(data1, "feature1");
-      store.setDistributionData(data2, "feature2");
+      // Store sequentially (each overwrites previous)
+      store.setDistributionData(data1);
+      store.setDistributionData(data2);
+      store.setDistributionData(data3);
+
+      // Retrieve last stored
+      const retrieved = store.getDistributionData();
+      expect(retrieved).toEqual(data3);
+    });
+
+    test("should allow data mutation after retrieval", () => {
+      const data = createMockDistributionData(1000);
+
+      store.setDistributionData(data);
 
       // Modify retrieved data
-      const retrieved1 = store.getDistributionData("feature1");
+      const retrieved1 = store.getDistributionData();
       if (retrieved1) {
         retrieved1.totalSpins = 9999;
       }
 
       // Original stored data should be affected (same reference)
-      const retrieved1Again = store.getDistributionData("feature1");
-      expect(retrieved1Again?.totalSpins).toBe(9999);
-
-      // Other feature data should be unaffected
-      const retrieved2 = store.getDistributionData("feature2");
-      expect(retrieved2?.totalSpins).toBe(2000);
+      const retrieved2 = store.getDistributionData();
+      expect(retrieved2?.totalSpins).toBe(9999);
     });
 
     test("should handle empty distribution data", () => {
@@ -247,8 +215,8 @@ test.describe("SharedDistributionStore", () => {
         sliceConfig: {},
       };
 
-      store.setDistributionData(emptyData, "empty-feature");
-      const retrieved = store.getDistributionData("empty-feature");
+      store.setDistributionData(emptyData);
+      const retrieved = store.getDistributionData();
 
       expect(retrieved).toEqual(emptyData);
       expect(retrieved?.totalSpins).toBe(0);
@@ -274,9 +242,9 @@ test.describe("SharedDistributionStore", () => {
       );
 
       const data = createMockDistributionData();
-      instance1.setDistributionData(data, "shared-test");
+      instance1.setDistributionData(data);
 
-      const retrieved = instance2.getDistributionData("shared-test");
+      const retrieved = instance2.getDistributionData();
       expect(retrieved).toEqual(data);
     });
   });

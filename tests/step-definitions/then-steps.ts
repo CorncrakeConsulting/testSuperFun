@@ -12,10 +12,6 @@ Then("the wheel should start spinning", async function (this: CustomWorld) {
   ).waitForWheelSpinStart();
 });
 
-Then("the wheel should land on a slice", async function (this: CustomWorld) {
-  await this.wheelGamePage.state.waitForWheelToStop();
-});
-
 Then(
   "the wheel should land on slice {int}",
   async function (this: CustomWorld, sliceIndex: number) {
@@ -36,16 +32,6 @@ Then(
   }
 );
 
-Then(
-  "the player balance should decrease by {int}",
-  async function (this: CustomWorld, amount: number) {
-    await new AssertionLogic(
-      this.page,
-      this.wheelGamePage
-    ).assertBalanceDecreasedBy(this.initialBalance ?? 0, amount);
-  }
-);
-
 Then("the wheel should not spin", async function (this: CustomWorld) {
   await new AssertionLogic(
     this.page,
@@ -62,10 +48,6 @@ Then(
     ).assertWinAmountCalculatedCorrectly();
   }
 );
-
-Then("the wheel should spin", async function (this: CustomWorld) {
-  await new AssertionLogic(this.page, this.wheelGamePage).waitForWheelSpin();
-});
 
 Then(
   /^the wheel should complete (\d+) spins automatically$/,
@@ -111,15 +93,6 @@ Then(
   }
 );
 
-Then(
-  "the bet display should show {int}",
-  async function (this: CustomWorld, expectedBet: number) {
-    await new AssertionLogic(this.page, this.wheelGamePage).assertBetEquals(
-      expectedBet
-    );
-  }
-);
-
 Then("autoplay should be enabled", async function (this: CustomWorld) {
   await new AssertionLogic(
     this.page,
@@ -144,65 +117,6 @@ Then(
   }
 );
 
-Then(
-  "another spin should start automatically after the first completes",
-  async function (this: CustomWorld) {
-    await new AssertionLogic(
-      this.page,
-      this.wheelGamePage
-    ).assertAnotherSpinStartsAutomatically();
-  }
-);
-
-Then(
-  "the balance display should show {int}",
-  async function (this: CustomWorld, expectedBalance: number) {
-    await new AssertionLogic(this.page, this.wheelGamePage).assertBalanceEquals(
-      expectedBalance
-    );
-  }
-);
-
-Then(
-  "the balance should decrease by {int}",
-  async function (this: CustomWorld, amount: number) {
-    await new AssertionLogic(
-      this.page,
-      this.wheelGamePage
-    ).assertBalanceDecreasedBy(this.initialBalance ?? 0, amount);
-  }
-);
-
-Then(
-  "the balance should increase by the win amount",
-  async function (this: CustomWorld) {
-    await new AssertionLogic(
-      this.page,
-      this.wheelGamePage
-    ).assertBalanceIncreasedByWin(this.initialBalance ?? 0);
-  }
-);
-
-Then(
-  "the balance should decrease after the first spin",
-  async function (this: CustomWorld) {
-    this.initialBalance = await new AssertionLogic(
-      this.page,
-      this.wheelGamePage
-    ).assertBalanceDecreasedAfterFirstSpin(this.initialBalance ?? 0);
-  }
-);
-
-Then(
-  "the balance should decrease again after autoplay triggers another spin",
-  async function (this: CustomWorld) {
-    await new AssertionLogic(
-      this.page,
-      this.wheelGamePage
-    ).assertBalanceChangedAfterAutoplaySecondSpin(this.initialBalance ?? 0);
-  }
-);
-
 Then("quick spin should be enabled", async function (this: CustomWorld) {
   await new AssertionLogic(
     this.page,
@@ -211,13 +125,6 @@ Then("quick spin should be enabled", async function (this: CustomWorld) {
 });
 
 Then("quick spin should be disabled", async function (this: CustomWorld) {
-  await new AssertionLogic(
-    this.page,
-    this.wheelGamePage
-  ).waitForQuickSpinState();
-});
-
-Then("quick spin should remain enabled", async function (this: CustomWorld) {
   await new AssertionLogic(
     this.page,
     this.wheelGamePage
@@ -235,33 +142,22 @@ Then(
 );
 
 Then(
-  "the wheel should spin at normal speed",
-  async function (this: CustomWorld) {
+  "the normal spin should complete in less than {int} seconds",
+  async function (this: CustomWorld, seconds: number) {
     await new AssertionLogic(
       this.page,
       this.wheelGamePage
-    ).assertNormalSpinSpeed(this.spinStartTime);
-    this.spinStartTime = undefined;
+    ).assertNormalSpinWithinMaxDuration(seconds * 1000);
   }
 );
 
 Then(
-  "the normal spin should complete in less than 10 seconds",
-  async function (this: CustomWorld) {
+  "the quick spin should complete in less than {int} seconds",
+  async function (this: CustomWorld, seconds: number) {
     await new AssertionLogic(
       this.page,
       this.wheelGamePage
-    ).assertNormalSpinWithinMaxDuration(10000);
-  }
-);
-
-Then(
-  "the quick spin should complete in less than 4 seconds",
-  async function (this: CustomWorld) {
-    await new AssertionLogic(
-      this.page,
-      this.wheelGamePage
-    ).assertQuickSpinWithinMaxDuration(4000);
+    ).assertQuickSpinWithinMaxDuration(seconds * 1000);
   }
 );
 
@@ -284,24 +180,20 @@ Then(
 );
 
 Then(
-  "all spins should be faster than normal",
-  async function (this: CustomWorld) {
-    await new AssertionLogic(
-      this.page,
-      this.wheelGamePage
-    ).assertAllSpinsFasterThanNormal(3);
-  }
-);
-
-Then(
   "all slice winnings should match their sprite multipliers",
-  async function (this: CustomWorld) {
+  function (this: CustomWorld) {
+    // Create a synchronous wrapper that ignores the promise
+    const syncAttach = (data: Buffer, mediaType: string): void => {
+      // Attach asynchronously - errors will be logged by Cucumber
+      this.attach(data, mediaType);
+    };
+
     new AssertionLogic(
       this.page,
       this.wheelGamePage
     ).assertAllSliceWinningsMatchSprites(
       this.multiplierTestResults || [],
-      this.attach.bind(this)
+      syncAttach
     );
   }
 );

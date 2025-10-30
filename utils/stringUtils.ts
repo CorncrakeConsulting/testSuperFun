@@ -14,9 +14,9 @@
 export function sanitizeForFilename(input: string): string {
   return input
     .toLowerCase()
-    .replace(/\s+/g, "-")
-    .replace(/[^a-z0-9-]/g, "")
-    .replace(/-+/g, "-");
+    .replaceAll(/\s+/g, "-")
+    .replaceAll(/[^a-z0-9-]/g, "")
+    .replaceAll(/-+/g, "-");
 }
 
 /**
@@ -31,7 +31,7 @@ export function createTimestamp(date: Date = new Date()): string {
     .toISOString()
     .replace(/T/, "_")
     .replace(/\..+/, "")
-    .replace(/:/g, "-");
+    .replaceAll(":", "-");
 }
 
 /**
@@ -59,8 +59,8 @@ export function createTimestampedFilename(
  * parseNumericValue("Win: 0") // 0
  */
 export function parseNumericValue(text: string): number {
-  const cleaned = text.replace(/[^0-9.-]/g, "");
-  return parseFloat(cleaned) || 0;
+  const cleaned = text.replaceAll(/[^0-9.-]/g, "");
+  return Number.parseFloat(cleaned) || 0;
 }
 
 /**

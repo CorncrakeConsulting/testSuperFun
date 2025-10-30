@@ -32,8 +32,7 @@ test.describe("Test Hooks Integration", () => {
     await gamePage.testHooks.setPlayerData({ balance: 1000, bet: 10 });
     await gamePage.testHooks.setWheelLandingIndex(0);
 
-    await gamePage.spin();
-    await gamePage.state.waitForWheelToStop();
+    await gamePage.spinAndWait();
 
     const balance = await gamePage.data.getBalance();
     expect(balance).toBe(990); // Should be deducted without win

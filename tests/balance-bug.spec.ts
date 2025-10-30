@@ -1,5 +1,9 @@
 import { test, expect } from "./fixtures/gameFixtures";
 import { TestLogger } from "../services/TestLogger";
+import {
+  findSliceByMultiplier,
+  setupDeterministicSpin,
+} from "../utils/testUtils";
 
 test.describe("Balance Calculation Bugs", () => {
   test("should correctly update balance when landing on 2X multiplier", async ({
@@ -9,38 +13,13 @@ test.describe("Balance Calculation Bugs", () => {
     const initialBalance = 1000;
     const betAmount = 50;
 
-    await gamePage.testHooks.setPlayerData({
-      balance: initialBalance,
-      bet: betAmount,
-      win: 0,
-    });
-
-    // Find the 2X slice - test each slice to identify which one has 2X multiplier
-    let twoXSliceIndex: number | undefined;
-
-    for (let sliceIndex = 0; sliceIndex < 8; sliceIndex++) {
-      // Reset state for each test
-      await gamePage.testHooks.setPlayerData({
-        balance: initialBalance,
-        bet: betAmount,
-        win: 0,
-      });
-
-      // Force wheel to land on this slice
-      await gamePage.testHooks.setWheelLandingIndex(sliceIndex);
-
-      await gamePage.spin();
-      await gamePage.state.waitForWheelToStop();
-
-      const win = await gamePage.data.getWin();
-
-      // Check if this is the 2X slice (win should be 2 * bet)
-      if (win === betAmount * 2) {
-        twoXSliceIndex = sliceIndex;
-        TestLogger.info(`Found 2X multiplier at slice index: ${sliceIndex}`);
-        break;
-      }
-    }
+    // Find the 2X slice using helper
+    const twoXSliceIndex = await findSliceByMultiplier(
+      gamePage,
+      2,
+      initialBalance,
+      betAmount
+    );
 
     // If no 2X found, skip this test (or fail if we know 2X exists)
     if (twoXSliceIndex === undefined) {
@@ -48,23 +27,21 @@ test.describe("Balance Calculation Bugs", () => {
       return;
     }
 
+    TestLogger.info(`Found 2X multiplier at slice index: ${twoXSliceIndex}`);
+
     // Now test the actual bug: balance calculation with 2X
-    await gamePage.testHooks.setPlayerData({
+    await setupDeterministicSpin(gamePage, twoXSliceIndex, {
       balance: initialBalance,
       bet: betAmount,
-      win: 0,
     });
 
-    await gamePage.testHooks.setWheelLandingIndex(twoXSliceIndex);
+    const { balance: balanceBeforeSpin, bet: betBeforeSpin } =
+      await gamePage.data.getCoreData();
 
-    const balanceBeforeSpin = await gamePage.data.getBalance();
-    const betBeforeSpin = await gamePage.data.getBet();
+    await gamePage.spinAndWait();
 
-    await gamePage.spin();
-    await gamePage.state.waitForWheelToStop();
-
-    const balanceAfterSpin = await gamePage.data.getBalance();
-    const winAmount = await gamePage.data.getWin();
+    const { balance: balanceAfterSpin, win: winAmount } =
+      await gamePage.data.getCoreData();
 
     // Expected calculation:
     // New Balance = Initial Balance - Bet + Win
@@ -88,6 +65,15 @@ test.describe("Balance Calculation Bugs", () => {
   test("should correctly update balance for all multipliers", async ({
     gamePage,
   }) => {
+    // Set timeout for 12 spins (with quick spin: ~2s each = 24s, with buffer = 60s)
+    test.setTimeout(60000);
+
+    // Enable quick spin to speed up this test (12 spins total)
+    await gamePage.enableQuickSpin();
+
+    // Get the actual number of slices from the game
+    const sliceCount = await gamePage.state.getSliceCount();
+
     // Test all slices to see which ones have incorrect balance calculations
     const initialBalance = 1000;
     const betAmount = 50;
@@ -99,21 +85,17 @@ test.describe("Balance Calculation Bugs", () => {
       isCorrect: boolean;
     }> = [];
 
-    for (let sliceIndex = 0; sliceIndex < 8; sliceIndex++) {
+    for (let sliceIndex = 0; sliceIndex < sliceCount; sliceIndex++) {
       // Reset for each spin
-      await gamePage.testHooks.setPlayerData({
+      await setupDeterministicSpin(gamePage, sliceIndex, {
         balance: initialBalance,
         bet: betAmount,
-        win: 0,
       });
 
-      await gamePage.testHooks.setWheelLandingIndex(sliceIndex);
+      await gamePage.spinAndWait();
 
-      await gamePage.spin();
-      await gamePage.state.waitForWheelToStop();
-
-      const actualBalance = await gamePage.data.getBalance();
-      const winAmount = await gamePage.data.getWin();
+      const { balance: actualBalance, win: winAmount } =
+        await gamePage.data.getCoreData();
       const multiplier = winAmount / betAmount;
       const expectedBalance = initialBalance - betAmount + winAmount;
 
@@ -128,24 +110,24 @@ test.describe("Balance Calculation Bugs", () => {
 
     // Log all results
     TestLogger.info("\n=== Balance Calculation Test Results ===");
-    results.forEach((result) => {
+    for (const result of results) {
       const status = result.isCorrect ? "✅" : "❌";
       TestLogger.info(
         `${status} Slice ${result.sliceIndex} (${result.multiplier}X): Expected ${result.expectedBalance}, Got ${result.actualBalance}`
       );
-    });
+    }
 
     // Find bugs
     const bugs = results.filter((r) => !r.isCorrect);
     if (bugs.length > 0) {
       TestLogger.info("\n🐛 BUGS FOUND:");
-      bugs.forEach((bug) => {
+      for (const bug of bugs) {
         TestLogger.info(
           `   Slice ${bug.sliceIndex} (${bug.multiplier}X): Off by ${
             bug.actualBalance - bug.expectedBalance
           }`
         );
-      });
+      }
     }
 
     // Fail if any balance calculations are wrong
@@ -161,24 +143,13 @@ test.describe("Balance Calculation Bugs", () => {
     const initialBalance = 1000;
     const betAmount = 50;
 
-    // Find 2X slice
-    let twoXSlice: number | undefined;
-    for (let i = 0; i < 8; i++) {
-      await gamePage.testHooks.setPlayerData({
-        balance: initialBalance,
-        bet: betAmount,
-        win: 0,
-      });
-      await gamePage.testHooks.setWheelLandingIndex(i);
-      await gamePage.spin();
-      await gamePage.state.waitForWheelToStop();
-
-      const win = await gamePage.data.getWin();
-      if (win === betAmount * 2) {
-        twoXSlice = i;
-        break;
-      }
-    }
+    // Find 2X slice using helper
+    const twoXSlice = await findSliceByMultiplier(
+      gamePage,
+      2,
+      initialBalance,
+      betAmount
+    );
 
     if (twoXSlice === undefined) {
       TestLogger.info("⚠️  No 2X slice found in wheel configuration");
@@ -187,13 +158,14 @@ test.describe("Balance Calculation Bugs", () => {
     }
 
     // Reproduce the bug
-    await gamePage.testHooks.setPlayerData({ balance: 1000, bet: 50, win: 0 });
-    await gamePage.testHooks.setWheelLandingIndex(twoXSlice);
-    await gamePage.spin();
-    await gamePage.state.waitForWheelToStop();
+    await setupDeterministicSpin(gamePage, twoXSlice, {
+      balance: 1000,
+      bet: 50,
+    });
+    await gamePage.spinAndWait();
 
-    const finalBalance = await gamePage.data.getBalance();
-    const winAmount = await gamePage.data.getWin();
+    const { balance: finalBalance, win: winAmount } =
+      await gamePage.data.getCoreData();
 
     TestLogger.info("\n🐛 BUG REPORT: 2X Balance Calculation");
     TestLogger.info("=====================================");

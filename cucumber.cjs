@@ -1,13 +1,13 @@
-const path = require("path");
-const fs = require("fs");
+const path = require("node:path");
+const fs = require("node:fs");
 
 // Create a single timestamped folder that will be used by both cucumber.cjs and hooks
 // This avoids timing issues with environment variables
 const timestamp = new Date()
   .toISOString()
-  .replace(/T/, "_")
+  .replaceAll("T", "_")
   .replace(/\..+/, "")
-  .replace(/:/g, "-");
+  .replaceAll(":", "-");
 
 const testRunFolder = path.join(
   process.cwd(),

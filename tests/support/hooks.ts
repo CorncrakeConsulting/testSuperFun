@@ -13,13 +13,14 @@ import {
   webkit,
   Browser,
   BrowserContext,
+  Page,
 } from "@playwright/test";
 import { TestLogger } from "../../services/TestLogger";
-import * as path from "path";
+import * as path from "node:path";
+import * as fs from "node:fs";
 import { sanitizeForFilename } from "../../utils/stringUtils";
 
 // Calculate timeout dynamically based on expected number of spins
-// Maximum expected spins is 1000 (for distribution testing), at ~0.5 spins/sec with quick spin, plus 50% buffer
 const MAX_EXPECTED_SPINS = 1000;
 const SPINS_PER_SECOND = 0.5;
 const BUFFER_MULTIPLIER = 1.5;
@@ -32,101 +33,95 @@ setDefaultTimeout(dynamicTimeout);
 let browser: Browser;
 let context: BrowserContext;
 
-// Get browser type from environment variable (default: chromium)
 const BROWSER = process.env.BROWSER || "chromium";
 const HEADED = process.env.HEADED === "true";
 
-BeforeAll(async function () {
-  // Initialize test run folder with timestamp
-  // Reads from .test-run-folder file created by cucumber.cjs
-  const testRunFolder = TestLogger.initializeTestRun();
+function getBrowserType() {
+  if (BROWSER === "firefox") return firefox;
+  if (BROWSER === "webkit") return webkit;
+  return chromium;
+}
 
-  // Launch browser once before all tests
-  const browserType =
-    BROWSER === "firefox" ? firefox : BROWSER === "webkit" ? webkit : chromium;
+function shouldLogConsoleMessage(text: string): boolean {
+  return (
+    !text.includes("React DevTools") &&
+    !text.includes("Download the React DevTools")
+  );
+}
+
+async function saveFailureScreenshot(
+  page: Page,
+  scenarioName: string,
+  testRunFolder: string
+): Promise<Buffer> {
+  const screenshot = await page.screenshot({ fullPage: true });
+  const screenshotsDir = path.join(testRunFolder, "screenshots");
+
+  fs.mkdirSync(screenshotsDir, { recursive: true });
+
+  await page.screenshot({
+    path: path.join(screenshotsDir, `failed-${scenarioName}-${Date.now()}.png`),
+    fullPage: true,
+  });
+
+  return screenshot;
+}
+
+BeforeAll(async function () {
+  const testRunFolder = TestLogger.initializeTestRun();
+  const browserType = getBrowserType();
 
   console.log(
-    `🌐 Launching ${BROWSER} browser for Cucumber tests${
-      HEADED ? " (HEADED mode)" : ""
-    }`
+    `🌐 Launching ${BROWSER} browser${HEADED ? " (HEADED mode)" : ""}`
   );
-  console.log(`📁 Reports will be saved to: ${testRunFolder}`);
+  console.log(`📁 Reports: ${testRunFolder}`);
 
   browser = await browserType.launch({
-    headless: !HEADED, // Use environment variable
-    slowMo: HEADED ? 100 : 50, // Slower when visible for better observation
+    headless: !HEADED,
+    slowMo: HEADED ? 100 : 50,
   });
 });
 
 Before(async function (this: World, scenario) {
-  // Extract feature name from scenario
   const featureName =
     scenario.pickle.uri?.split("/").pop()?.replace(".feature", "") || "unknown";
   TestLogger.setCurrentFeature(featureName);
 
-  // Create new context and page for each scenario
-  const testRunFolder = TestLogger.getTestRunFolder();
-
   context = await browser.newContext({
     baseURL: "http://localhost:3000",
-    viewport: { width: 1280, height: 720 }, // Match Desktop Chrome viewport for proper UI rendering
-    recordVideo: {
-      dir: path.join(testRunFolder, "videos"),
-    },
+    viewport: { width: 1280, height: 720 },
+    recordVideo: { dir: path.join(TestLogger.getTestRunFolder(), "videos") },
   });
 
   this.page = await context.newPage();
 
-  // Set up console log capture (filter out noise)
-  this.page.on("console", (msg: { type: () => string; text: () => string }) => {
+  this.page.on("console", (msg) => {
     const text = msg.text();
-    // Filter out React DevTools and other noise
-    if (
-      text.includes("React DevTools") ||
-      text.includes("Download the React DevTools")
-    ) {
-      return; // Skip these messages
+    if (shouldLogConsoleMessage(text)) {
+      console.log(`Browser [${msg.type()}]:`, text);
     }
-    console.log(`Browser Console [${msg.type()}]:`, text);
   });
 
-  // Set up error capture
-  this.page.on("pageerror", (error: Error) => {
+  this.page.on("pageerror", (error) => {
     console.error("Browser Error:", error.message);
   });
 });
 
 After(async function (this: World, scenario) {
-  const testRunFolder = TestLogger.getTestRunFolder();
-
   if (scenario.result?.status === Status.FAILED) {
-    // Capture and attach screenshot to report for all failures
-    const screenshot = await this.page.screenshot({ fullPage: true });
-    this.attach(screenshot, "image/png");
-
-    // Also save to disk in the test run folder
     const scenarioName = sanitizeForFilename(scenario.pickle.name);
-    const screenshotsDir = path.join(testRunFolder, "screenshots");
-
-    // Ensure screenshots directory exists
-    const fs = require("fs");
-    if (!fs.existsSync(screenshotsDir)) {
-      fs.mkdirSync(screenshotsDir, { recursive: true });
-    }
-
-    await this.page.screenshot({
-      path: path.join(
-        screenshotsDir,
-        `failed-${scenarioName}-${Date.now()}.png`
-      ),
-      fullPage: true,
-    });
+    const screenshot = await saveFailureScreenshot(
+      this.page,
+      scenarioName,
+      TestLogger.getTestRunFolder()
+    );
+    this.attach(screenshot, "image/png");
   }
+
   await this.page.close();
   await context.close();
 });
 
-//always run cleanup
 AfterAll(async function () {
   await browser.close();
 });

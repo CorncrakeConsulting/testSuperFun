@@ -1,8 +1,66 @@
-// Global type declarations for the wheel game test hooks
+/**
+ * Global TypeScript type declarations for the wheel game test suite
+ *
+ * This file provides type safety for:
+ * 1. Browser window objects - Test hooks (setPlayerData, setWheelLandIndex) and game state
+ *    accessed via page.evaluate() in Playwright tests
+ * 2. Cucumber World context - Custom properties available in step definitions (this.wheelGamePage, etc.)
+ *
+ * Without these declarations, TypeScript would show errors when accessing browser context
+ * or custom Cucumber World properties.
+ */
 
 import { Page } from "@playwright/test";
 import { WheelGamePage } from "../pages/WheelGamePage";
 import { DistributionTestingLogic } from "../logic/DistributionTestingLogic";
+
+/**
+ * Wheel slice configuration
+ */
+interface WheelSlice {
+  winMultiplier: number;
+  sprite?: string;
+  [key: string]: unknown;
+}
+
+/**
+ * Wheel configuration
+ */
+interface WheelConfig {
+  slices?: WheelSlice[];
+  [key: string]: unknown;
+}
+
+/**
+ * Game wheel object
+ */
+interface GameWheel {
+  _config?: WheelConfig;
+  _state?: string;
+  slices?: WheelSlice[];
+  container?: {
+    rotation?: number;
+    [key: string]: unknown;
+  };
+  queue?: unknown[];
+  state?: {
+    current?: string;
+  };
+  [key: string]: unknown;
+}
+
+/**
+ * Game object structure
+ */
+interface GameObject {
+  wheel?: GameWheel;
+  wheelData?: {
+    slices?: WheelSlice[];
+    [key: string]: unknown;
+  };
+  queue?: unknown[];
+  [key: string]: unknown;
+}
 
 declare global {
   interface Window {
@@ -16,26 +74,8 @@ declare global {
       }>
     ) => void;
     setWheelLandIndex: (index: number | undefined) => void;
-    game: {
-      wheel: {
-        slices?: unknown[];
-        queue?: unknown[];
-        state?: {
-          current?: string;
-        };
-        [key: string]: unknown;
-      };
-      wheelData?: {
-        slices?: unknown[];
-        [key: string]: unknown;
-      };
-      queue?: unknown[];
-      [key: string]: unknown;
-    };
+    game: GameObject;
   }
-
-  // Extend globalThis to match Window for browser context
-  var globalThis: typeof globalThis & Window;
 }
 
 // Cucumber World interface
@@ -44,8 +84,7 @@ declare module "@cucumber/cucumber" {
     page: Page;
     wheelGamePage: WheelGamePage;
     distributionLogic: DistributionTestingLogic;
-    initialBalance?: number;
-    attach: (data: string | Buffer, mediaType: string) => void;
+    attach: (data: string | Buffer, mediaType: string) => Promise<void>;
   }
 }
 

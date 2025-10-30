@@ -16,9 +16,7 @@ test.describe("Game Initialization and UI", () => {
   });
 
   test("should display correct initial player data", async ({ gamePage }) => {
-    const balance = await gamePage.data.getBalance();
-    const bet = await gamePage.data.getBet();
-    const win = await gamePage.data.getWin();
+    const { balance, bet, win } = await gamePage.data.getCoreData();
 
     expect(balance).toBe(1000);
     expect(bet).toBe(10);

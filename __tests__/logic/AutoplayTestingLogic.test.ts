@@ -1,12 +1,11 @@
-import { test, expect } from "@playwright/test";
-import { Page } from "@playwright/test";
+import { test, expect, Page } from "@playwright/test";
 import {
   AutoplayTestingLogic,
   AutoplayTestingOptions,
 } from "../../logic/AutoplayTestingLogic";
 import { WheelGamePage } from "../../pages/WheelGamePage";
 import { WheelState } from "../../types/WheelState";
-import { ILogger } from "../../services/TestLogger";
+
 import {
   createMockPage,
   createMockWheelGamePage,
@@ -203,7 +202,7 @@ test.describe("AutoplayTestingLogic Unit Tests", () => {
       ];
 
       let callCount = 0;
-      let waitTimeoutCalls: number[] = [];
+      const waitTimeoutCalls: number[] = [];
 
       const mockPage = {
         waitForTimeout: async (ms: number) => {
@@ -222,7 +221,7 @@ test.describe("AutoplayTestingLogic Unit Tests", () => {
       await logic.verifyAutoplaySpins(1);
 
       // Verify waitForTimeout was called with custom interval
-      expect(waitTimeoutCalls.some((time) => time === 200)).toBe(true);
+      expect(waitTimeoutCalls.includes(200)).toBe(true);
     });
   });
 

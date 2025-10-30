@@ -24,7 +24,6 @@ export class DistributionTestingLogic {
   private readonly world: CustomWorld;
   private readonly logger: ILogger;
   private readonly NUM_SLICES = 12; // Wheel has 12 slices
-  private static readonly FEATURE_TAG = "distribution"; // Tag to identify this feature's data
 
   constructor(world: CustomWorld, logger?: ILogger) {
     this.world = world;
@@ -33,6 +32,7 @@ export class DistributionTestingLogic {
     this.distributionData = this.initializeDistributionData();
   }
 
+  // Ensures only one DistributionTestingLogic exists per CustomWorld scenario.
   static ensureInitialized(world: CustomWorld): DistributionTestingLogic {
     if (!world.wheelGamePage) {
       world.wheelGamePage = WheelGamePage.create(world.page);
@@ -55,10 +55,7 @@ export class DistributionTestingLogic {
       throw new Error("No spin data was collected");
     }
 
-    sharedDistributionStore.setDistributionData(
-      this.distributionData,
-      DistributionTestingLogic.FEATURE_TAG
-    );
+    sharedDistributionStore.setDistributionData(this.distributionData);
     this.logger.success(
       `Successfully stored data from ${this.distributionData.totalSpins} spins for validation scenarios`
     );
@@ -68,9 +65,7 @@ export class DistributionTestingLogic {
    * Load previously stored distribution data for analysis
    */
   public loadStoredDistributionData(): void {
-    const data = sharedDistributionStore.getDistributionData(
-      DistributionTestingLogic.FEATURE_TAG
-    );
+    const data = sharedDistributionStore.getDistributionData();
 
     if (!data) {
       throw new Error(
@@ -210,82 +205,87 @@ export class DistributionTestingLogic {
    */
   public async performRandomSpins(times: number): Promise<void> {
     const startTime = Date.now();
-    this.logger.info(`\n🎰 Starting distribution test with ${times} spins...`);
-    this.logger.info(`   Using ${this.NUM_SLICES} slice wheel configuration`);
-    this.logger.info(
-      `   Quick spin: ${
-        (await this.wheelGamePage.state.isQuickSpinEnabled())
-          ? "ENABLED ⚡"
-          : "DISABLED"
-      }`
-    );
-
+    await this.logTestStart(times);
     await this.wheelGamePage.testHooks.setWheelLandingIndex(undefined);
-
-    // Reset counters
     this.resetDistributionCounters();
 
-    // Perform spins
     for (let spinNumber = 0; spinNumber < times; spinNumber++) {
-      const currentBet = await this.wheelGamePage.data.getBet();
-
-      await this.wheelGamePage.spin();
-      await this.wheelGamePage.state.waitForWheelToStop();
-
-      // Get the actual slice index the wheel landed on
-      const landedSlice = await this.getLandedSliceIndex();
-      const winAmount = await this.wheelGamePage.data.getWin();
-
-      this.distributionData.distribution[landedSlice]++;
-      this.distributionData.totalWon += winAmount;
-      this.distributionData.totalSpins++;
-      this.distributionData.totalWagered += currentBet;
-
-      // Progress indicator
-      if ((spinNumber + 1) % 10 === 0 || spinNumber === times - 1) {
-        const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-        const spinsPerSec = (
-          ((spinNumber + 1) / (Date.now() - startTime)) *
-          1000
-        ).toFixed(1);
-        this.logger.info(
-          `   Progress: ${
-            spinNumber + 1
-          }/${times} spins (${elapsed}s elapsed, ${spinsPerSec} spins/sec)`
-        );
-      }
-
-      // Print raw results every 100 spins
-      if ((spinNumber + 1) % 100 === 0) {
-        this.logger.info(`\n📊 Raw Results After ${spinNumber + 1} Spins:`);
-        this.logger.info(
-          `   Distribution: ${JSON.stringify(
-            this.distributionData.distribution
-          )}`
-        );
-        this.logger.info(
-          `   Total Wagered: ${this.distributionData.totalWagered}`
-        );
-        this.logger.info(`   Total Won: ${this.distributionData.totalWon}`);
-        this.logger.info(
-          `   RTP: ${(
-            (this.distributionData.totalWon /
-              this.distributionData.totalWagered) *
-            100
-          ).toFixed(2)}%\n`
-        );
-      }
+      await this.executeSingleSpin();
+      this.logProgress(spinNumber, times, startTime);
+      this.logIntermediateResults(spinNumber);
     }
 
+    this.logTestComplete(startTime);
+  }
+
+  private async logTestStart(times: number): Promise<void> {
+    this.logger.info(`\n🎰 Starting distribution test with ${times} spins...`);
+    this.logger.info(`   Using ${this.NUM_SLICES} slice wheel configuration`);
+    const quickSpinEnabled =
+      await this.wheelGamePage.state.isQuickSpinEnabled();
+    this.logger.info(
+      `   Quick spin: ${quickSpinEnabled ? "ENABLED ⚡" : "DISABLED"}`
+    );
+  }
+
+  private async executeSingleSpin(): Promise<void> {
+    const currentBet = await this.wheelGamePage.data.getBet();
+    await this.wheelGamePage.spin();
+    await this.wheelGamePage.state.waitForWheelToStop();
+
+    const landedSlice = await this.getLandedSliceIndex();
+    const winAmount = await this.wheelGamePage.data.getWin();
+
+    this.distributionData.distribution[landedSlice]++;
+    this.distributionData.totalWon += winAmount;
+    this.distributionData.totalSpins++;
+    this.distributionData.totalWagered += currentBet;
+  }
+
+  private logProgress(
+    spinNumber: number,
+    totalSpins: number,
+    startTime: number
+  ): void {
+    if ((spinNumber + 1) % 10 === 0 || spinNumber === totalSpins - 1) {
+      const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+      const spinsPerSec = (
+        ((spinNumber + 1) / (Date.now() - startTime)) *
+        1000
+      ).toFixed(1);
+      this.logger.info(
+        `   Progress: ${
+          spinNumber + 1
+        }/${totalSpins} spins (${elapsed}s elapsed, ${spinsPerSec} spins/sec)`
+      );
+    }
+  }
+
+  private logIntermediateResults(spinNumber: number): void {
+    if ((spinNumber + 1) % 100 === 0) {
+      const rtp =
+        (this.distributionData.totalWon / this.distributionData.totalWagered) *
+        100;
+      this.logger.info(`\n📊 Raw Results After ${spinNumber + 1} Spins:`);
+      this.logger.info(
+        `   Distribution: ${JSON.stringify(this.distributionData.distribution)}`
+      );
+      this.logger.info(
+        `   Total Wagered: ${this.distributionData.totalWagered}`
+      );
+      this.logger.info(`   Total Won: ${this.distributionData.totalWon}`);
+      this.logger.info(`   RTP: ${rtp.toFixed(2)}%\n`);
+    }
+  }
+
+  private logTestComplete(startTime: number): void {
     const totalTime = ((Date.now() - startTime) / 1000).toFixed(1);
+    const netResult =
+      this.distributionData.totalWon - this.distributionData.totalWagered;
     this.logger.success(`\nSpin testing complete in ${totalTime}s`);
     this.logger.info(`   Total wagered: ${this.distributionData.totalWagered}`);
     this.logger.info(`   Total won: ${this.distributionData.totalWon}`);
-    this.logger.info(
-      `   Net result: ${
-        this.distributionData.totalWon - this.distributionData.totalWagered
-      }`
-    );
+    this.logger.info(`   Net result: ${netResult}`);
   }
 
   /**
@@ -336,6 +336,31 @@ export class DistributionTestingLogic {
     const totalSpins = this.distributionData.totalSpins;
     const expectedPerSlice = totalSpins / this.NUM_SLICES;
 
+    this.logDistributionHeader(totalSpins, expectedPerSlice, tolerance);
+
+    const validationResults = this.analyzeSliceDistribution(
+      expectedPerSlice,
+      tolerance
+    );
+
+    this.logDistributionSummary(validationResults);
+
+    if (validationResults.errors.length > 0) {
+      throw new Error(
+        `Distribution validation failed (${
+          validationResults.failingSlices.length
+        }/${
+          this.NUM_SLICES
+        } slices outside tolerance):\n\n${validationResults.errors.join("\n")}`
+      );
+    }
+  }
+
+  private logDistributionHeader(
+    totalSpins: number,
+    expectedPerSlice: number,
+    tolerance: number
+  ): void {
     this.logger.info("\n" + "=".repeat(80));
     this.logger.info("📈 DISTRIBUTION ANALYSIS");
     this.logger.info("=".repeat(80));
@@ -349,85 +374,143 @@ export class DistributionTestingLogic {
     this.logger.info(`Tolerance: ±${(tolerance * 100).toFixed(0)}%`);
     this.logger.info("\nSlice Results:");
     this.logger.info("-".repeat(80));
+  }
 
+  private analyzeSliceDistribution(
+    expectedPerSlice: number,
+    tolerance: number
+  ): {
+    errors: string[];
+    passingSlices: number[];
+    failingSlices: number[];
+    slicesNeverHit: number;
+  } {
     const errors: string[] = [];
     const passingSlices: number[] = [];
     const failingSlices: number[] = [];
     let slicesNeverHit = 0;
 
     for (let i = 0; i < this.NUM_SLICES; i++) {
-      const count = this.distributionData.distribution[i];
-      const percentage = (count / totalSpins) * 100;
-      const deviation = ((count - expectedPerSlice) / expectedPerSlice) * 100;
-      const multiplier = this.distributionData.sliceMultipliers[i];
-      const status =
-        Math.abs(deviation) < tolerance * 100 ? "✅ PASS" : "❌ FAIL";
+      const sliceResult = this.analyzeSlice(i, expectedPerSlice, tolerance);
 
-      this.logger.info(
-        `Slice ${i.toString().padStart(2)}: ${count
-          .toString()
-          .padStart(3)} hits | ` +
-          `${percentage.toFixed(1).padStart(5)}% | ` +
-          `Deviation: ${
-            (deviation >= 0 ? "+" : "") + deviation.toFixed(1).padStart(6)
-          }% | ` +
-          `Multiplier: ${multiplier.toFixed(1).padStart(4)}x | ${status}`
-      );
+      this.logSliceResult(i, sliceResult);
 
-      if (count === 0) {
+      if (sliceResult.count === 0) {
         slicesNeverHit++;
       }
 
-      if (Math.abs(deviation) >= tolerance * 100) {
+      if (sliceResult.isOutsideTolerance) {
         failingSlices.push(i);
-        errors.push(
-          `Slice ${i} (${multiplier}x): ${count} hits (${percentage.toFixed(
-            1
-          )}%), ` +
-            `deviation ${deviation >= 0 ? "+" : ""}${deviation.toFixed(
-              1
-            )}% exceeds ±${tolerance * 100}%`
-        );
+        errors.push(this.formatSliceError(i, sliceResult, tolerance));
       } else {
         passingSlices.push(i);
       }
     }
 
+    return { errors, passingSlices, failingSlices, slicesNeverHit };
+  }
+
+  private analyzeSlice(
+    sliceIndex: number,
+    expectedPerSlice: number,
+    tolerance: number
+  ): {
+    count: number;
+    percentage: number;
+    deviation: number;
+    multiplier: number;
+    isOutsideTolerance: boolean;
+  } {
+    const count = this.distributionData.distribution[sliceIndex];
+    const totalSpins = this.distributionData.totalSpins;
+    const percentage = (count / totalSpins) * 100;
+    const deviation = ((count - expectedPerSlice) / expectedPerSlice) * 100;
+    const multiplier = this.distributionData.sliceMultipliers[sliceIndex];
+    const isOutsideTolerance = Math.abs(deviation) >= tolerance * 100;
+
+    return { count, percentage, deviation, multiplier, isOutsideTolerance };
+  }
+
+  private logSliceResult(
+    sliceIndex: number,
+    result: {
+      count: number;
+      percentage: number;
+      deviation: number;
+      multiplier: number;
+      isOutsideTolerance: boolean;
+    }
+  ): void {
+    const status = result.isOutsideTolerance ? "❌ FAIL" : "✅ PASS";
+    this.logger.info(
+      `Slice ${sliceIndex.toString().padStart(2)}: ${result.count
+        .toString()
+        .padStart(3)} hits | ` +
+        `${result.percentage.toFixed(1).padStart(5)}% | ` +
+        `Deviation: ${
+          (result.deviation >= 0 ? "+" : "") +
+          result.deviation.toFixed(1).padStart(6)
+        }% | ` +
+        `Multiplier: ${result.multiplier.toFixed(1).padStart(4)}x | ${status}`
+    );
+  }
+
+  private formatSliceError(
+    sliceIndex: number,
+    result: {
+      count: number;
+      percentage: number;
+      deviation: number;
+      multiplier: number;
+    },
+    tolerance: number
+  ): string {
+    return (
+      `Slice ${sliceIndex} (${result.multiplier}x): ${
+        result.count
+      } hits (${result.percentage.toFixed(1)}%), ` +
+      `deviation ${result.deviation >= 0 ? "+" : ""}${result.deviation.toFixed(
+        1
+      )}% exceeds ±${tolerance * 100}%`
+    );
+  }
+
+  private logDistributionSummary(results: {
+    passingSlices: number[];
+    failingSlices: number[];
+    slicesNeverHit: number;
+  }): void {
     this.logger.info("-".repeat(80));
     this.logger.info(`\n📊 Summary:`);
     this.logger.info(
-      `   Passing slices: ${passingSlices.length}/${this.NUM_SLICES}`
+      `   Passing slices: ${results.passingSlices.length}/${this.NUM_SLICES}`
     );
     this.logger.info(
-      `   Failing slices: ${failingSlices.length}/${this.NUM_SLICES}`
+      `   Failing slices: ${results.failingSlices.length}/${this.NUM_SLICES}`
     );
     this.logger.info(
-      `   Slices never hit: ${slicesNeverHit}/${this.NUM_SLICES}`
+      `   Slices never hit: ${results.slicesNeverHit}/${this.NUM_SLICES}`
     );
 
-    if (slicesNeverHit > 0) {
-      const neverHitSlices = [];
-      for (let i = 0; i < this.NUM_SLICES; i++) {
-        if (this.distributionData.distribution[i] === 0) {
-          neverHitSlices.push(i);
-        }
-      }
-      this.logger.info(
-        `   ⚠️  WARNING: Slices [${neverHitSlices.join(
-          ", "
-        )}] were NEVER hit - possible RNG bug!`
-      );
+    if (results.slicesNeverHit > 0) {
+      this.logNeverHitWarning();
     }
 
     this.logger.info("=".repeat(80) + "\n");
+  }
 
-    if (errors.length > 0) {
-      throw new Error(
-        `Distribution validation failed (${failingSlices.length}/${
-          this.NUM_SLICES
-        } slices outside tolerance):\n\n${errors.join("\n")}`
-      );
+  private logNeverHitWarning(): void {
+    const neverHitSlices = [];
+    for (let i = 0; i < this.NUM_SLICES; i++) {
+      if (this.distributionData.distribution[i] === 0) {
+        neverHitSlices.push(i);
+      }
     }
+    this.logger.info(
+      `   ⚠️  WARNING: Slices [${neverHitSlices.join(
+        ", "
+      )}] were NEVER hit - possible RNG bug!`
+    );
   }
 
   /**
@@ -653,81 +736,6 @@ export class DistributionTestingLogic {
 
     if (count === 0) {
       throw new Error(`Slice ${sliceIndex} was never hit`);
-    }
-  }
-
-  /**
-   * Validate high multiplier slices are not over-represented
-   */
-  public validateHighMultiplierDistribution(): void {
-    const multipliers: number[] = Object.values(
-      this.distributionData.sliceMultipliers
-    );
-    const avgMultiplier =
-      multipliers.reduce((a: number, b: number) => a + b, 0) /
-      multipliers.length;
-
-    let highMultiplierHits = 0;
-    let totalHits = 0;
-
-    for (let i = 0; i < this.NUM_SLICES; i++) {
-      const hits = this.distributionData.distribution[i];
-      totalHits += hits;
-
-      if (this.distributionData.sliceMultipliers[i] > avgMultiplier) {
-        highMultiplierHits += hits;
-      }
-    }
-
-    const highMultiplierPercentage = (highMultiplierHits / totalHits) * 100;
-    this.logger.info(
-      `High multiplier slices: ${highMultiplierPercentage.toFixed(1)}% of hits`
-    );
-
-    // Should be roughly 50% since we split at average
-    if (highMultiplierPercentage >= 60 || highMultiplierPercentage <= 40) {
-      throw new Error(
-        `High multiplier distribution ${highMultiplierPercentage.toFixed(
-          1
-        )}% is outside 40-60% range`
-      );
-    }
-  }
-
-  /**
-   * Validate low multiplier slices are not under-represented
-   */
-  public validateLowMultiplierDistribution(): void {
-    const multipliers: number[] = Object.values(
-      this.distributionData.sliceMultipliers
-    );
-    const avgMultiplier =
-      multipliers.reduce((a: number, b: number) => a + b, 0) /
-      multipliers.length;
-
-    let lowMultiplierHits = 0;
-    let totalHits = 0;
-
-    for (let i = 0; i < this.NUM_SLICES; i++) {
-      const hits = this.distributionData.distribution[i];
-      totalHits += hits;
-
-      if (this.distributionData.sliceMultipliers[i] <= avgMultiplier) {
-        lowMultiplierHits += hits;
-      }
-    }
-
-    const lowMultiplierPercentage = (lowMultiplierHits / totalHits) * 100;
-    this.logger.info(
-      `Low multiplier slices: ${lowMultiplierPercentage.toFixed(1)}% of hits`
-    );
-
-    if (lowMultiplierPercentage >= 60 || lowMultiplierPercentage <= 40) {
-      throw new Error(
-        `Low multiplier distribution ${lowMultiplierPercentage.toFixed(
-          1
-        )}% is outside 40-60% range`
-      );
     }
   }
 

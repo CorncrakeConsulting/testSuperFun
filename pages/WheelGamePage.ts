@@ -1,4 +1,3 @@
-/// <reference path="../types/global.d.ts" />
 import { Page, expect } from "@playwright/test";
 import { WheelGameLocators } from "./WheelGameLocators";
 import { WheelGameDataReader } from "./WheelGameDataReader";
@@ -234,10 +233,11 @@ export class WheelGamePage {
    * @returns The current state of the wheel (IDLE, SPINNING, RESOLVING, etc.)
    */
   async getWheelState(): Promise<string> {
-    return (await this.page.evaluate(() => {
-      const game = (globalThis as typeof globalThis & Window).game;
+    return await this.page.evaluate(() => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const game = (globalThis as any).game;
       return game?.wheel?._state || "";
-    })) as string;
+    });
   }
 }
 
@@ -309,13 +309,13 @@ export class WheelGamePageBuilder {
     const state = this.state ?? new WheelGameState(this.page, locators);
     const testHooks = this.testHooks ?? new WheelGameTestHooks(this.page);
 
-    // Access private constructor via type assertion (TypeScript workaround)
-    return new (WheelGamePage as any)(
+    // Use Reflect.construct to access private constructor
+    return Reflect.construct(WheelGamePage, [
       this.page,
       locators,
       data,
       state,
-      testHooks
-    );
+      testHooks,
+    ]) as WheelGamePage;
   }
 }

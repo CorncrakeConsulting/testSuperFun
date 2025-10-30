@@ -1,4 +1,4 @@
-import { When, setDefaultTimeout } from "@cucumber/cucumber";
+import { When, setDefaultTimeout, DataTable } from "@cucumber/cucumber";
 import { CustomWorld } from "../support/world";
 import { BalanceTestingLogic } from "../../logic/BalanceTestingLogic";
 import { SpinTestingLogic } from "../../logic/SpinTestingLogic";
@@ -54,13 +54,6 @@ When(
   }
 );
 
-When(
-  "the player balance is set to {int} using test hooks",
-  async function (this: CustomWorld, balance: number) {
-    await this.wheelGamePage.testHooks.setPlayerData({ balance });
-  }
-);
-
 When("the player enables quick spin", async function (this: CustomWorld) {
   await this.wheelGamePage.enableQuickSpin();
 });
@@ -102,7 +95,7 @@ When(
 
 When(
   "the player spins the wheel landing on each slice and verifies the results and balance",
-  async function (this: CustomWorld, dataTable) {
+  async function (this: CustomWorld, dataTable: DataTable) {
     await new BalanceTestingLogic(
       this.page,
       this.wheelGamePage

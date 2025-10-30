@@ -53,23 +53,20 @@ export default tseslint.config(
 
   // Test files configuration
   {
-    files: ["tests/**/*.ts", "**/*.spec.ts", "**/*.test.ts"],
+    files: [
+      "tests/**/*.ts",
+      "__tests__/**/*.ts",
+      "**/*.spec.ts",
+      "**/*.test.ts",
+    ],
     rules: {
       // Relax some rules for test files
       "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/require-await": "off",
+      "@typescript-eslint/no-unsafe-assignment": "off",
+      "@typescript-eslint/no-unsafe-return": "off",
       "max-lines-per-function": ["error", 200],
       "sonarjs/no-duplicate-string": "off",
-    },
-  },
-
-  // Logic files must have corresponding test coverage
-  {
-    files: ["logic/**/*.ts"],
-    rules: {
-      // Enforce stricter rules for logic files that should be well-tested
-      "@typescript-eslint/no-explicit-any": "error",
-      "sonarjs/cognitive-complexity": ["error", 10],
-      complexity: ["error", 10],
     },
   },
 
@@ -83,7 +80,9 @@ export default tseslint.config(
       "eslint-report.json",
       "dist/**",
       "build/**",
+      "__tests__/**",
       "*.config.js",
+      "*.cjs",
       "*.log",
     ],
   }

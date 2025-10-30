@@ -23,6 +23,7 @@ export interface CustomWorld extends World {
   wheelGamePage: WheelGamePage;
   distributionLogic: DistributionTestingLogic;
   autoplayLogic: AutoplayTestingLogic;
+  initialBalance?: number;
   balanceBeforeSpin?: number;
   balanceAfterFirstSpin?: number;
   multiplierTestResults?: MultiplierTestResult[];
@@ -38,6 +39,7 @@ export class CustomWorldImpl extends World implements CustomWorld {
   wheelGamePage!: WheelGamePage;
   distributionLogic!: DistributionTestingLogic;
   autoplayLogic!: AutoplayTestingLogic;
+  initialBalance?: number;
   balanceBeforeSpin?: number;
   balanceAfterFirstSpin?: number;
   multiplierTestResults?: MultiplierTestResult[];

@@ -1,5 +1,5 @@
 import { test, expect } from "./fixtures/gameFixtures";
-import { GameConstants } from "../utils/testUtils";
+import { setupDeterministicSpin } from "../utils/testUtils";
 
 test.describe("Player Controls", () => {
   test.describe("Bet Management", () => {
@@ -49,14 +49,13 @@ test.describe("Player Controls", () => {
     test("should deduct bet amount from balance after spin", async ({
       gamePage,
     }) => {
-      const initialBalance = await gamePage.data.getBalance();
-      const betAmount = await gamePage.data.getBet();
+      const { balance: initialBalance, bet: betAmount } =
+        await gamePage.data.getCoreData();
 
       // Force wheel to land on slice 2 (0x multiplier - losing spin)
       await gamePage.testHooks.setWheelLandingIndex(2);
 
-      await gamePage.spin();
-      await gamePage.state.waitForWheelToStop();
+      await gamePage.spinAndWait();
 
       const newBalance = await gamePage.data.getBalance();
       expect(newBalance).toBe(initialBalance - betAmount);
@@ -123,7 +122,7 @@ test.describe("Player Controls", () => {
 
     for (const scenario of betScenarios) {
       test(`should handle ${scenario.description}`, async ({ gamePage }) => {
-        await gamePage.testHooks.setPlayerData({
+        await setupDeterministicSpin(gamePage, 2, {
           balance: scenario.balance,
           bet: scenario.bet,
         });
@@ -131,18 +130,13 @@ test.describe("Player Controls", () => {
         // Small wait to ensure data is applied (especially in webkit)
         await gamePage.page.waitForTimeout(100);
 
-        const balance = await gamePage.data.getBalance();
-        const bet = await gamePage.data.getBet();
+        const { balance, bet } = await gamePage.data.getCoreData();
 
         expect(balance).toBe(scenario.balance);
         expect(bet).toBe(scenario.bet);
 
-        // Force wheel to land on slice 2 (0x multiplier - losing spin)
-        await gamePage.testHooks.setWheelLandingIndex(2);
-
         // Test that spinning works with this configuration
-        await gamePage.spin();
-        await gamePage.state.waitForWheelToStop();
+        await gamePage.spinAndWait();
 
         const newBalance = await gamePage.data.getBalance();
         expect(newBalance).toBe(scenario.balance - scenario.bet);

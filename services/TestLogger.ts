@@ -1,18 +1,24 @@
-import * as fs from "fs";
-import * as path from "path";
-import { sanitizeForFilename, createTimestamp } from "../utils/stringUtils";
+import * as fs from "node:fs";
+import * as path from "node:path";
+import { createTimestamp } from "../utils/stringUtils";
 
 /**
- * Logger interface for dependency injection
+ * Type representing values that can be logged
+ * Limited to types actually used in the codebase: strings, numbers, and objects
+ */
+type Loggable = string | number | { [key: string]: unknown };
+
+/**
+ * Logger interface for dependency injection - this is for demonstration purposes
  */
 export interface ILogger {
-  info(message: string, ...args: any[]): void;
-  success(message: string, ...args: any[]): void;
-  warn(message: string, ...args: any[]): void;
-  error(message: string, ...args: any[]): void;
-  debug(message: string, ...args: any[]): void;
-  step(message: string, ...args: any[]): void;
-  spin(message: string, ...args: any[]): void;
+  info(message: string, ...args: Loggable[]): void;
+  success(message: string, ...args: Loggable[]): void;
+  warn(message: string, ...args: Loggable[]): void;
+  error(message: string, ...args: Loggable[]): void;
+  debug(message: string, ...args: Loggable[]): void;
+  step(message: string, ...args: Loggable[]): void;
+  spin(message: string, ...args: Loggable[]): void;
   logToFile(filePath: string, message: string): void;
 }
 
@@ -99,17 +105,6 @@ export class TestLogger implements ILogger {
   }
 
   /**
-   * Get the report path for the current feature
-   */
-  static getFeatureReportPath(extension: string = "html"): string {
-    const runFolder = TestLogger.getTestRunFolder();
-    const featureName = TestLogger.currentFeatureName || "report";
-    const sanitizedName = sanitizeForFilename(featureName);
-
-    return path.join(runFolder, `${sanitizedName}.${extension}`);
-  }
-
-  /**
    * Create a new logger instance with custom settings
    */
   static create(enabled?: boolean, verbose?: boolean): ILogger {
@@ -127,29 +122,9 @@ export class TestLogger implements ILogger {
   }
 
   /**
-   * Enable or disable logging (static configuration)
-   */
-  static setEnabled(enabled: boolean): void {
-    TestLogger.enabled = enabled;
-    if (TestLogger.defaultInstance) {
-      TestLogger.defaultInstance.enabled = enabled;
-    }
-  }
-
-  /**
-   * Enable or disable verbose logging (static configuration)
-   */
-  static setVerbose(verbose: boolean): void {
-    TestLogger.verbose = verbose;
-    if (TestLogger.defaultInstance) {
-      TestLogger.defaultInstance.verbose = verbose;
-    }
-  }
-
-  /**
    * Log informational message
    */
-  info(message: string, ...args: any[]): void {
+  info(message: string, ...args: Loggable[]): void {
     if (this.enabled) {
       console.log(`ℹ️  ${message}`, ...args);
     }
@@ -158,7 +133,7 @@ export class TestLogger implements ILogger {
   /**
    * Log success message
    */
-  success(message: string, ...args: any[]): void {
+  success(message: string, ...args: Loggable[]): void {
     if (this.enabled) {
       console.log(`✅ ${message}`, ...args);
     }
@@ -167,7 +142,7 @@ export class TestLogger implements ILogger {
   /**
    * Log warning message
    */
-  warn(message: string, ...args: any[]): void {
+  warn(message: string, ...args: Loggable[]): void {
     if (this.enabled) {
       console.warn(`⚠️  ${message}`, ...args);
     }
@@ -176,14 +151,14 @@ export class TestLogger implements ILogger {
   /**
    * Log error message (always shown to both console and logger)
    */
-  error(message: string, ...args: any[]): void {
+  error(message: string, ...args: Loggable[]): void {
     console.error(`❌ ${message}`, ...args);
   }
 
   /**
    * Log debug message (only in verbose mode)
    */
-  debug(message: string, ...args: any[]): void {
+  debug(message: string, ...args: Loggable[]): void {
     if (this.enabled && this.verbose) {
       console.log(`🔍 ${message}`, ...args);
     }
@@ -192,7 +167,7 @@ export class TestLogger implements ILogger {
   /**
    * Log test step execution
    */
-  step(message: string, ...args: any[]): void {
+  step(message: string, ...args: Loggable[]): void {
     if (this.enabled) {
       console.log(`🎯 ${message}`, ...args);
     }
@@ -201,7 +176,7 @@ export class TestLogger implements ILogger {
   /**
    * Log spin-related events
    */
-  spin(message: string, ...args: any[]): void {
+  spin(message: string, ...args: Loggable[]): void {
     if (this.enabled) {
       console.log(`🎰 ${message}`, ...args);
     }
@@ -215,7 +190,7 @@ export class TestLogger implements ILogger {
    */
   logToFile(filePath: string, message: string): void {
     // Queue the file write to prevent race conditions
-    TestLogger.fileWriteQueue = TestLogger.fileWriteQueue.then(async () => {
+    TestLogger.fileWriteQueue = TestLogger.fileWriteQueue.then(() => {
       const resolvedPath = path.isAbsolute(filePath)
         ? filePath
         : path.join(process.cwd(), filePath);
@@ -239,31 +214,31 @@ export class TestLogger implements ILogger {
   }
 
   // Static methods for backward compatibility
-  static info(message: string, ...args: any[]): void {
+  static info(message: string, ...args: Loggable[]): void {
     TestLogger.getDefault().info(message, ...args);
   }
 
-  static success(message: string, ...args: any[]): void {
+  static success(message: string, ...args: Loggable[]): void {
     TestLogger.getDefault().success(message, ...args);
   }
 
-  static warn(message: string, ...args: any[]): void {
+  static warn(message: string, ...args: Loggable[]): void {
     TestLogger.getDefault().warn(message, ...args);
   }
 
-  static error(message: string, ...args: any[]): void {
+  static error(message: string, ...args: Loggable[]): void {
     TestLogger.getDefault().error(message, ...args);
   }
 
-  static debug(message: string, ...args: any[]): void {
+  static debug(message: string, ...args: Loggable[]): void {
     TestLogger.getDefault().debug(message, ...args);
   }
 
-  static step(message: string, ...args: any[]): void {
+  static step(message: string, ...args: Loggable[]): void {
     TestLogger.getDefault().step(message, ...args);
   }
 
-  static spin(message: string, ...args: any[]): void {
+  static spin(message: string, ...args: Loggable[]): void {
     TestLogger.getDefault().spin(message, ...args);
   }
 
@@ -276,37 +251,45 @@ export class TestLogger implements ILogger {
    */
   static createMockLogger(): ILogger & {
     calls: {
-      info: any[][];
-      success: any[][];
-      warn: any[][];
-      error: any[][];
-      debug: any[][];
-      step: any[][];
-      spin: any[][];
-      logToFile: any[][];
+      info: Array<[string, ...Loggable[]]>;
+      success: Array<[string, ...Loggable[]]>;
+      warn: Array<[string, ...Loggable[]]>;
+      error: Array<[string, ...Loggable[]]>;
+      debug: Array<[string, ...Loggable[]]>;
+      step: Array<[string, ...Loggable[]]>;
+      spin: Array<[string, ...Loggable[]]>;
+      logToFile: Array<[string, string]>;
     };
   } {
     const calls = {
-      info: [] as any[][],
-      success: [] as any[][],
-      warn: [] as any[][],
-      error: [] as any[][],
-      debug: [] as any[][],
-      step: [] as any[][],
-      spin: [] as any[][],
-      logToFile: [] as any[][],
+      info: [] as Array<[string, ...Loggable[]]>,
+      success: [] as Array<[string, ...Loggable[]]>,
+      warn: [] as Array<[string, ...Loggable[]]>,
+      error: [] as Array<[string, ...Loggable[]]>,
+      debug: [] as Array<[string, ...Loggable[]]>,
+      step: [] as Array<[string, ...Loggable[]]>,
+      spin: [] as Array<[string, ...Loggable[]]>,
+      logToFile: [] as Array<[string, string]>,
     };
 
     return {
       calls,
-      info: (...args: any[]) => calls.info.push(args),
-      success: (...args: any[]) => calls.success.push(args),
-      warn: (...args: any[]) => calls.warn.push(args),
-      error: (...args: any[]) => calls.error.push(args),
-      debug: (...args: any[]) => calls.debug.push(args),
-      step: (...args: any[]) => calls.step.push(args),
-      spin: (...args: any[]) => calls.spin.push(args),
-      logToFile: (...args: any[]) => calls.logToFile.push(args),
+      info: (message: string, ...args: Loggable[]) =>
+        calls.info.push([message, ...args]),
+      success: (message: string, ...args: Loggable[]) =>
+        calls.success.push([message, ...args]),
+      warn: (message: string, ...args: Loggable[]) =>
+        calls.warn.push([message, ...args]),
+      error: (message: string, ...args: Loggable[]) =>
+        calls.error.push([message, ...args]),
+      debug: (message: string, ...args: Loggable[]) =>
+        calls.debug.push([message, ...args]),
+      step: (message: string, ...args: Loggable[]) =>
+        calls.step.push([message, ...args]),
+      spin: (message: string, ...args: Loggable[]) =>
+        calls.spin.push([message, ...args]),
+      logToFile: (filePath: string, message: string) =>
+        calls.logToFile.push([filePath, message]),
     };
   }
 }

@@ -17,28 +17,16 @@ export class WheelGameState {
    */
   async isSpinning(): Promise<boolean> {
     return await this.page.evaluate(
-      ([spinning, resolving]) => {
+      (states: [string, string]) => {
+        const [spinning, resolving] = states;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const game = (globalThis as any).game;
         //no state => not spinning
         if (!game?.wheel?._state) return false;
         const state = game.wheel._state;
         return state === spinning || state === resolving;
       },
-      [WheelState.Spinning, WheelState.Resolving]
-    );
-  }
-
-  /**
-   * Wait for the wheel to start spinning
-   */
-  async waitForWheelToStartSpinning(timeout: number = 5000): Promise<void> {
-    await this.page.waitForFunction(
-      (spinning) => {
-        const game = (globalThis as any).game;
-        return game?.wheel?._state === spinning;
-      },
-      WheelState.Spinning,
-      { timeout }
+      [WheelState.Spinning, WheelState.Resolving] as [string, string]
     );
   }
 
@@ -48,6 +36,7 @@ export class WheelGameState {
   async waitForSpinComplete(timeout: number = 10000): Promise<void> {
     await this.page.waitForFunction(
       ([resolved, idle]) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const game = (globalThis as any).game;
         const state = game?.wheel?._state;
         return state === resolved || state === idle;
@@ -70,7 +59,7 @@ export class WheelGameState {
    */
   async isQuickSpinEnabled(): Promise<boolean> {
     // Check if the checkbox shows the checked image
-    const isChecked = await this.page.evaluate(() => {
+    return await this.page.evaluate(() => {
       const quickSpinDiv = document.querySelector("#quick-spin-button");
       const button = quickSpinDiv?.querySelector("button");
       const img = button?.querySelector("img");
@@ -79,8 +68,6 @@ export class WheelGameState {
       // The checked state shows "checked_box.png", unchecked shows "box.png"
       return imgSrc.includes("checked_box.png");
     });
-
-    return isChecked;
   }
 
   /**
@@ -88,6 +75,7 @@ export class WheelGameState {
    */
   async getSliceCount(): Promise<number> {
     return await this.page.evaluate(() => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const game = (globalThis as any).game;
       if (game?.wheel?.slices) {
         return game.wheel.slices.length;
@@ -108,36 +96,19 @@ export class WheelGameState {
   */
   async getLandedSliceIndex(): Promise<number> {
     return await this.page.evaluate(() => {
-      const game = (globalThis as any).game;
+      const game = (globalThis as typeof globalThis & Window).game;
       if (!game?.wheel) {
         throw new Error("Game wheel not found");
       }
 
-      const rotation = game.wheel.container.rotation;
-      const sliceCount = game.wheel._config.slices.length;
+      const wheel = game.wheel;
+      const rotation = wheel.container?.rotation ?? 0;
+      const sliceCount = wheel._config?.slices?.length ?? 8;
       const sliceAngle = (Math.PI * 2) / sliceCount;
 
       const normalizedRotation = rotation % (Math.PI * 2);
-      const sliceIndex = Math.floor(normalizedRotation / sliceAngle);
-
-      return sliceIndex;
+      return Math.floor(normalizedRotation / sliceAngle);
     });
-  }
-
-  /**
-   * Get the configuration of a specific slice including sprite and multiplier
-   */
-  async getSliceConfiguration(
-    sliceIndex: number
-  ): Promise<{ sprite: string; winMultiplier: number }> {
-    return await this.page.evaluate((idx) => {
-      const game = (globalThis as any).game;
-      const slice = game.wheel._config.slices[idx];
-      return {
-        sprite: slice.sprite,
-        winMultiplier: slice.winMultiplier,
-      };
-    }, sliceIndex);
   }
 
   /**
@@ -145,7 +116,7 @@ export class WheelGameState {
    */
   async getGameInstance(): Promise<Window["game"] | undefined> {
     return await this.page.evaluate(() => {
-      return (globalThis as any).game;
+      return (globalThis as typeof globalThis & Window).game;
     });
   }
 }

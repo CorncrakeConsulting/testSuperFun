@@ -1,13 +1,11 @@
 import { When, Then, Given } from "@cucumber/cucumber";
 import { DistributionTestingLogic } from "../../logic/DistributionTestingLogic";
 import { CustomWorld } from "../support/world";
-import { TestLogger } from "../../services/TestLogger";
 
 // Action steps
 When(
   "the player spins the wheel {int} times without setting landing index",
   async function (this: CustomWorld, times: number) {
-    TestLogger.info(`🎡 Starting ${times} spins...`);
     await DistributionTestingLogic.ensureInitialized(this).performRandomSpins(
       times
     );

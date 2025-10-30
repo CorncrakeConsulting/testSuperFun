@@ -1,14 +1,14 @@
 /**
  * Shared Distribution Data Store
- * Allows distribution data to be shared across scenarios within a feature
- * Simple in-memory store for data sharing within a test run
+ * Allows distribution data to be shared across scenarios within a test run
+ * Simple in-memory store for data sharing
  */
 
 import { DistributionData } from "./DistributionTestingLogic";
 import { TestLogger, ILogger } from "../services/TestLogger";
 
 export class SharedDistributionStore {
-  private dataStore: Map<string, DistributionData> = new Map();
+  private data: DistributionData | null = null;
   private readonly logger: ILogger;
 
   constructor(logger?: ILogger) {
@@ -16,28 +16,24 @@ export class SharedDistributionStore {
   }
 
   /**
-   * Store distribution data for a feature
+   * Store distribution data
    */
-  public setDistributionData(data: DistributionData, featureTag: string): void {
-    this.dataStore.set(featureTag, data);
-    this.logger.debug(`📦 Stored distribution data for feature: ${featureTag}`);
+  public setDistributionData(data: DistributionData): void {
+    this.data = data;
+    this.logger.debug(`📦 Stored distribution data`);
   }
 
   /**
-   * Retrieve distribution data for a feature
+   * Retrieve distribution data
    */
-  public getDistributionData(featureTag: string): DistributionData | null {
-    const data = this.dataStore.get(featureTag);
-
-    if (!data) {
-      this.logger.debug(`📦 No stored data found for feature: ${featureTag}`);
+  public getDistributionData(): DistributionData | null {
+    if (!this.data) {
+      this.logger.debug(`📦 No stored data found`);
       return null;
     }
 
-    this.logger.debug(
-      `📦 Retrieved stored distribution data for feature: ${featureTag}`
-    );
-    return data;
+    this.logger.debug(`📦 Retrieved stored distribution data`);
+    return this.data;
   }
 }
 

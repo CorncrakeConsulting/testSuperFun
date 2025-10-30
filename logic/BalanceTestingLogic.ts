@@ -1,7 +1,7 @@
 import { Page } from "@playwright/test";
 import { DataTable } from "@cucumber/cucumber";
 import { WheelGamePage } from "../pages/WheelGamePage";
-import { TestLogger, ITestLogger } from "../services/TestLogger";
+import { TestLogger, ILogger } from "../services/TestLogger";
 
 export interface SliceTestData {
   sliceIndex: number;
@@ -21,23 +21,25 @@ export interface SliceValidationResult {
 }
 
 export class BalanceTestingLogic {
-  private readonly logger: ITestLogger;
+  private readonly logger: ILogger;
 
   constructor(
     private readonly page: Page,
     private readonly wheelGamePage: WheelGamePage,
-    logger?: ITestLogger
+    logger?: ILogger
   ) {
     this.logger = logger ?? TestLogger.getDefault();
   }
 
-  private async getSliceConfiguration(sliceIndex: number) {
+  private async getSliceConfiguration(
+    sliceIndex: number
+  ): Promise<{ sprite: string; winMultiplier: number }> {
     return await this.page.evaluate((idx) => {
-      const game = (globalThis as any).game;
-      const slice = game.wheel._config.slices[idx];
+      const game = (globalThis as typeof globalThis & Window).game;
+      const slice = game?.wheel?._config?.slices?.[idx];
       return {
-        sprite: slice.sprite,
-        winMultiplier: slice.winMultiplier,
+        sprite: slice?.sprite ?? "",
+        winMultiplier: slice?.winMultiplier ?? 0,
       };
     }, sliceIndex);
   }
@@ -86,14 +88,18 @@ export class BalanceTestingLogic {
   }
 
   private validateWinAndBalance(
-    sliceIndex: number,
-    actualWin: number,
-    expectedWin: number,
-    balanceBefore: number,
-    balanceAfter: number,
-    bet: number,
-    errors: string[]
+    result: SliceValidationResult,
+    bet: number
   ): void {
+    const {
+      sliceIndex,
+      actualWin,
+      expectedWin,
+      balanceBefore,
+      balanceAfter,
+      errors,
+    } = result;
+
     // Validation 3: Check if actual win matches expected win
     if (actualWin !== expectedWin) {
       errors.push(
@@ -110,15 +116,17 @@ export class BalanceTestingLogic {
     }
   }
 
-  private logSliceResult(
-    sliceIndex: number,
-    actualSpriteMultiplier: number,
-    configuredMultiplier: number,
-    expectedWin: number,
-    actualWin: number,
-    balanceBefore: number,
-    balanceAfter: number
-  ): void {
+  private logSliceResult(result: SliceValidationResult): void {
+    const {
+      sliceIndex,
+      actualSpriteMultiplier,
+      configuredMultiplier,
+      expectedWin,
+      actualWin,
+      balanceBefore,
+      balanceAfter,
+    } = result;
+
     this.logger.info(
       `Slice ${sliceIndex}: sprite=${actualSpriteMultiplier}x, ` +
         `config=${configuredMultiplier}x, ` +
@@ -175,29 +183,8 @@ export class BalanceTestingLogic {
     const { balance: balanceAfter, win: actualWin } =
       await this.captureSpinResults();
 
-    // Validate win and balance
-    this.validateWinAndBalance(
-      sliceIndex,
-      actualWin,
-      expectedWin,
-      balanceBefore,
-      balanceAfter,
-      bet,
-      errors
-    );
-
-    // Log the results
-    this.logSliceResult(
-      sliceIndex,
-      actualSpriteMultiplier,
-      sliceConfig.winMultiplier,
-      expectedWin,
-      actualWin,
-      balanceBefore,
-      balanceAfter
-    );
-
-    return {
+    // Create result object
+    const result: SliceValidationResult = {
       sliceIndex,
       actualSpriteMultiplier,
       configuredMultiplier: sliceConfig.winMultiplier,
@@ -207,6 +194,14 @@ export class BalanceTestingLogic {
       balanceAfter,
       errors,
     };
+
+    // Validate win and balance
+    this.validateWinAndBalance(result, bet);
+
+    // Log the results
+    this.logSliceResult(result);
+
+    return result;
   }
 
   async validateAllSlices(sliceTestData: SliceTestData[]): Promise<void> {
@@ -233,7 +228,7 @@ export class BalanceTestingLogic {
   }
 
   parseDataTableToSliceTestData(dataTable: DataTable): SliceTestData[] {
-    return dataTable.hashes().map((row: any) => ({
+    return dataTable.hashes().map((row: Record<string, string>) => ({
       //Without specifying the radix, parseInt() can be unpredictable
       sliceIndex: Number.parseInt(row.slice_index, 10),
       expectedSpriteMultiplier: Number.parseFloat(row.sprite_multiplier),

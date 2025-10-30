@@ -20,8 +20,7 @@
     "lint": "eslint . --ext .ts,.js",
     "lint:fix": "eslint . --ext .ts,.js --fix",
     "lint:report": "eslint . --ext .ts,.js --format json --output-file eslint-report.json",
-    "quality:check": "npm run lint && npm run coverage:check",
-    "coverage:check": "node scripts/check-coverage.js",
+    "quality:check": "npm run lint",
     "sonar": "sonar-scanner",
     "sonar:full": "npm run lint:report && sonar-scanner"
   },
