@@ -2,6 +2,7 @@ import { Page } from "@playwright/test";
 import { DataTable } from "@cucumber/cucumber";
 import { WheelGamePage } from "../pages/WheelGamePage";
 import { TestLogger, ILogger } from "../services/TestLogger";
+import { GameWindow } from "../utils/windowHelpers";
 
 export interface SliceTestData {
   sliceIndex: number;
@@ -35,7 +36,7 @@ export class BalanceTestingLogic {
     sliceIndex: number
   ): Promise<{ sprite: string; winMultiplier: number }> {
     return await this.page.evaluate((idx) => {
-      const game = (globalThis as typeof globalThis & Window).game;
+      const game = (globalThis as unknown as GameWindow).game;
       const slice = game?.wheel?._config?.slices?.[idx];
       return {
         sprite: slice?.sprite ?? "",

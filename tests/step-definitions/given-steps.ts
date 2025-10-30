@@ -21,6 +21,13 @@ Given(
 );
 
 Given(
+  "the player balance is set to {int} using test hooks",
+  async function (this: CustomWorld, balance: number) {
+    await this.wheelGamePage.testHooks.setPlayerData({ balance });
+  }
+);
+
+Given(
   "the player has placed a bet of {int}",
   async function (this: CustomWorld, bet: number) {
     await this.wheelGamePage.testHooks.setPlayerData({ bet });

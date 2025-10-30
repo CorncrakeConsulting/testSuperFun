@@ -1,6 +1,7 @@
 import { Page } from "@playwright/test";
 import { WheelGameLocators } from "./WheelGameLocators";
 import { WheelState } from "../types/WheelState";
+import { GameWindow } from "../utils/windowHelpers";
 
 /**
  * Game State Manager for the Wheel Game
@@ -19,8 +20,7 @@ export class WheelGameState {
     return await this.page.evaluate(
       (states: [string, string]) => {
         const [spinning, resolving] = states;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const game = (globalThis as any).game;
+        const game = (globalThis as unknown as GameWindow).game;
         //no state => not spinning
         if (!game?.wheel?._state) return false;
         const state = game.wheel._state;
@@ -36,8 +36,7 @@ export class WheelGameState {
   async waitForSpinComplete(timeout: number = 10000): Promise<void> {
     await this.page.waitForFunction(
       ([resolved, idle]) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const game = (globalThis as any).game;
+        const game = (globalThis as unknown as GameWindow).game;
         const state = game?.wheel?._state;
         return state === resolved || state === idle;
       },
@@ -75,8 +74,7 @@ export class WheelGameState {
    */
   async getSliceCount(): Promise<number> {
     return await this.page.evaluate(() => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const game = (globalThis as any).game;
+      const game = (globalThis as unknown as GameWindow).game;
       if (game?.wheel?.slices) {
         return game.wheel.slices.length;
       }
@@ -96,7 +94,7 @@ export class WheelGameState {
   */
   async getLandedSliceIndex(): Promise<number> {
     return await this.page.evaluate(() => {
-      const game = (globalThis as typeof globalThis & Window).game;
+      const game = (globalThis as unknown as GameWindow).game;
       if (!game?.wheel) {
         throw new Error("Game wheel not found");
       }
@@ -114,9 +112,9 @@ export class WheelGameState {
   /**
    * Get game instance for advanced testing
    */
-  async getGameInstance(): Promise<Window["game"] | undefined> {
+  async getGameInstance(): Promise<GameWindow["game"] | undefined> {
     return await this.page.evaluate(() => {
-      return (globalThis as typeof globalThis & Window).game;
+      return (globalThis as unknown as GameWindow).game;
     });
   }
 }

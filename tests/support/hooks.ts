@@ -5,7 +5,6 @@ import {
   AfterAll,
   Status,
   setDefaultTimeout,
-  World,
 } from "@cucumber/cucumber";
 import {
   chromium,
@@ -14,11 +13,13 @@ import {
   Browser,
   BrowserContext,
   Page,
+  ConsoleMessage,
 } from "@playwright/test";
 import { TestLogger } from "../../services/TestLogger";
 import * as path from "node:path";
 import * as fs from "node:fs";
 import { sanitizeForFilename } from "../../utils/stringUtils";
+import { CustomWorld } from "./world";
 
 // Calculate timeout dynamically based on expected number of spins
 const MAX_EXPECTED_SPINS = 1000;
@@ -82,7 +83,7 @@ BeforeAll(async function () {
   });
 });
 
-Before(async function (this: World, scenario) {
+Before(async function (this: CustomWorld, scenario) {
   const featureName =
     scenario.pickle.uri?.split("/").pop()?.replace(".feature", "") || "unknown";
   TestLogger.setCurrentFeature(featureName);
@@ -95,19 +96,19 @@ Before(async function (this: World, scenario) {
 
   this.page = await context.newPage();
 
-  this.page.on("console", (msg) => {
+  this.page.on("console", (msg: ConsoleMessage) => {
     const text = msg.text();
     if (shouldLogConsoleMessage(text)) {
       console.log(`Browser [${msg.type()}]:`, text);
     }
   });
 
-  this.page.on("pageerror", (error) => {
+  this.page.on("pageerror", (error: Error) => {
     console.error("Browser Error:", error.message);
   });
 });
 
-After(async function (this: World, scenario) {
+After(async function (this: CustomWorld, scenario) {
   if (scenario.result?.status === Status.FAILED) {
     const scenarioName = sanitizeForFilename(scenario.pickle.name);
     const screenshot = await saveFailureScreenshot(

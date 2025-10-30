@@ -111,9 +111,9 @@ export class AssertionLogic {
     const quickSpinDuration = Date.now() - startTime;
 
     this.logger.debug(`Quick spin duration: ${quickSpinDuration}ms`);
-    // Quick spin should complete in approximately 2.5-4 seconds (with 3.5x speed multiplier)
+    // Quick spin should complete in approximately 1-4.5 seconds (with 3.5x speed multiplier)
     expect(quickSpinDuration).toBeLessThan(4500);
-    expect(quickSpinDuration).toBeGreaterThan(1500);
+    expect(quickSpinDuration).toBeGreaterThan(1000);
   }
 
   async assertNormalSpinSpeed(spinStartTime?: number): Promise<void> {

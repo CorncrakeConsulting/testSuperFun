@@ -1,5 +1,6 @@
 import { Page } from "@playwright/test";
 import { TestLogger } from "../services/TestLogger";
+import { GameWindow } from "../utils/windowHelpers";
 
 /**
  * Test Hooks for the Wheel Game
@@ -19,11 +20,8 @@ export class WheelGameTestHooks {
     quickSpin?: boolean;
   }): Promise<void> {
     await this.page.evaluate((playerData) => {
-      (
-        globalThis as typeof globalThis & {
-          setPlayerData: (data: typeof playerData) => void;
-        }
-      ).setPlayerData(playerData);
+      const win = globalThis as unknown as GameWindow;
+      win.setPlayerData?.(playerData);
     }, data);
   }
 
@@ -33,11 +31,8 @@ export class WheelGameTestHooks {
   async setWheelLandingIndex(index: number | undefined): Promise<void> {
     const result = await this.page.evaluate((landingIndex) => {
       console.log(`🎲 Test hook: Setting landing index to ${landingIndex}`);
-      const setWheelLandIndex = (
-        globalThis as typeof globalThis & {
-          setWheelLandIndex: (index: typeof landingIndex) => void;
-        }
-      ).setWheelLandIndex;
+      const win = globalThis as unknown as GameWindow;
+      const setWheelLandIndex = win.setWheelLandIndex;
 
       if (typeof setWheelLandIndex === "function") {
         setWheelLandIndex(landingIndex);
@@ -65,7 +60,7 @@ export class WheelGameTestHooks {
    */
   async setWheelLandingMultiplier(multiplier: number): Promise<void> {
     const sliceIndex = await this.page.evaluate((targetMultiplier) => {
-      const game = (globalThis as typeof globalThis & Window).game;
+      const game = (globalThis as unknown as GameWindow).game;
       const slices = game?.wheel?._config?.slices || [];
 
       // Find first slice with matching multiplier
@@ -79,7 +74,10 @@ export class WheelGameTestHooks {
 
       // If not found, list available multipliers for debugging
       const available = slices
-        .map((s, i: number) => `${i}: ${s?.winMultiplier}x`)
+        .map(
+          (s: { winMultiplier: number }, i: number) =>
+            `${i}: ${s?.winMultiplier}x`
+        )
         .join(", ");
       throw new Error(
         `No slice found with multiplier ${targetMultiplier}. Available: ${available}`
