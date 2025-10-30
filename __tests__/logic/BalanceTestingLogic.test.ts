@@ -6,43 +6,15 @@ import {
   SliceTestData,
 } from "../../logic/BalanceTestingLogic";
 import { WheelGamePage } from "../../pages/WheelGamePage";
+import {
+  createMockPageWithEvaluate,
+  createMockWheelGamePageWithData,
+} from "../helpers/testMocks";
 
 /**
  * Unit tests for BalanceTestingLogic
  * Tests slice validation, win calculations, and balance verification
  */
-
-// Helper to create a mock page
-function createMockPage(
-  sliceConfig = { sprite: "10x.png", winMultiplier: 10 }
-): Partial<Page> {
-  return {
-    evaluate: async () => sliceConfig,
-    waitForTimeout: async () => {},
-  } as any;
-}
-
-// Helper to create a mock WheelGamePage
-function createMockWheelGamePage(
-  balance: number = 1000,
-  win: number = 0,
-  bet: number = 100
-): Partial<WheelGamePage> {
-  return {
-    data: {
-      getBalance: async () => balance,
-      getWin: async () => win,
-      getBet: async () => bet,
-    } as any,
-    testHooks: {
-      setWheelLandingIndex: async () => {},
-    } as any,
-    spin: async () => {},
-    state: {
-      waitForSpinComplete: async () => {},
-    } as any,
-  } as any;
-}
 
 // Helper to create a mock DataTable
 function createMockDataTable(rows: any[]): DataTable {
@@ -54,8 +26,8 @@ function createMockDataTable(rows: any[]): DataTable {
 test.describe("BalanceTestingLogic Unit Tests", () => {
   test.describe("extractMultiplierFromSprite", () => {
     test("should extract integer multiplier from sprite filename", () => {
-      const mockPage = createMockPage() as Page;
-      const mockWheelGamePage = createMockWheelGamePage() as WheelGamePage;
+      const mockPage = createMockPageWithEvaluate({ sprite: "10x.png", winMultiplier: 10 }) as Page;
+      const mockWheelGamePage = createMockWheelGamePageWithData() as WheelGamePage;
       const logic = new BalanceTestingLogic(mockPage, mockWheelGamePage);
 
       const result = (logic as any).extractMultiplierFromSprite("10x.png");
@@ -63,8 +35,8 @@ test.describe("BalanceTestingLogic Unit Tests", () => {
     });
 
     test("should extract decimal multiplier from sprite filename", () => {
-      const mockPage = createMockPage() as Page;
-      const mockWheelGamePage = createMockWheelGamePage() as WheelGamePage;
+      const mockPage = createMockPageWithEvaluate({ sprite: "10x.png", winMultiplier: 10 }) as Page;
+      const mockWheelGamePage = createMockWheelGamePageWithData() as WheelGamePage;
       const logic = new BalanceTestingLogic(mockPage, mockWheelGamePage);
 
       const result = (logic as any).extractMultiplierFromSprite("0.5x.png");
@@ -72,8 +44,8 @@ test.describe("BalanceTestingLogic Unit Tests", () => {
     });
 
     test("should return null for invalid sprite filename", () => {
-      const mockPage = createMockPage() as Page;
-      const mockWheelGamePage = createMockWheelGamePage() as WheelGamePage;
+      const mockPage = createMockPageWithEvaluate({ sprite: "10x.png", winMultiplier: 10 }) as Page;
+      const mockWheelGamePage = createMockWheelGamePageWithData() as WheelGamePage;
       const logic = new BalanceTestingLogic(mockPage, mockWheelGamePage);
 
       const result = (logic as any).extractMultiplierFromSprite("invalid.png");
@@ -81,8 +53,8 @@ test.describe("BalanceTestingLogic Unit Tests", () => {
     });
 
     test("should handle sprite without .png extension", () => {
-      const mockPage = createMockPage() as Page;
-      const mockWheelGamePage = createMockWheelGamePage() as WheelGamePage;
+      const mockPage = createMockPageWithEvaluate({ sprite: "10x.png", winMultiplier: 10 }) as Page;
+      const mockWheelGamePage = createMockWheelGamePageWithData() as WheelGamePage;
       const logic = new BalanceTestingLogic(mockPage, mockWheelGamePage);
 
       const result = (logic as any).extractMultiplierFromSprite("5x");
@@ -92,8 +64,8 @@ test.describe("BalanceTestingLogic Unit Tests", () => {
 
   test.describe("validateSpriteConfiguration", () => {
     test("should not add errors when all multipliers match", () => {
-      const mockPage = createMockPage() as Page;
-      const mockWheelGamePage = createMockWheelGamePage() as WheelGamePage;
+      const mockPage = createMockPageWithEvaluate({ sprite: "10x.png", winMultiplier: 10 }) as Page;
+      const mockWheelGamePage = createMockWheelGamePageWithData() as WheelGamePage;
       const logic = new BalanceTestingLogic(mockPage, mockWheelGamePage);
       const errors: string[] = [];
 
@@ -103,8 +75,8 @@ test.describe("BalanceTestingLogic Unit Tests", () => {
     });
 
     test("should add error when actual sprite doesn't match expected", () => {
-      const mockPage = createMockPage() as Page;
-      const mockWheelGamePage = createMockWheelGamePage() as WheelGamePage;
+      const mockPage = createMockPageWithEvaluate({ sprite: "10x.png", winMultiplier: 10 }) as Page;
+      const mockWheelGamePage = createMockWheelGamePageWithData() as WheelGamePage;
       const logic = new BalanceTestingLogic(mockPage, mockWheelGamePage);
       const errors: string[] = [];
 
@@ -115,8 +87,8 @@ test.describe("BalanceTestingLogic Unit Tests", () => {
     });
 
     test("should add error when sprite doesn't match configured multiplier", () => {
-      const mockPage = createMockPage() as Page;
-      const mockWheelGamePage = createMockWheelGamePage() as WheelGamePage;
+      const mockPage = createMockPageWithEvaluate({ sprite: "10x.png", winMultiplier: 10 }) as Page;
+      const mockWheelGamePage = createMockWheelGamePageWithData() as WheelGamePage;
       const logic = new BalanceTestingLogic(mockPage, mockWheelGamePage);
       const errors: string[] = [];
 
@@ -127,8 +99,8 @@ test.describe("BalanceTestingLogic Unit Tests", () => {
     });
 
     test("should add multiple errors when both validations fail", () => {
-      const mockPage = createMockPage() as Page;
-      const mockWheelGamePage = createMockWheelGamePage() as WheelGamePage;
+      const mockPage = createMockPageWithEvaluate({ sprite: "10x.png", winMultiplier: 10 }) as Page;
+      const mockWheelGamePage = createMockWheelGamePageWithData() as WheelGamePage;
       const logic = new BalanceTestingLogic(mockPage, mockWheelGamePage);
       const errors: string[] = [];
 
@@ -142,8 +114,8 @@ test.describe("BalanceTestingLogic Unit Tests", () => {
 
   test.describe("validateWinAndBalance", () => {
     test("should not add errors when win and balance are correct", () => {
-      const mockPage = createMockPage() as Page;
-      const mockWheelGamePage = createMockWheelGamePage() as WheelGamePage;
+      const mockPage = createMockPageWithEvaluate({ sprite: "10x.png", winMultiplier: 10 }) as Page;
+      const mockWheelGamePage = createMockWheelGamePageWithData() as WheelGamePage;
       const logic = new BalanceTestingLogic(mockPage, mockWheelGamePage);
       const errors: string[] = [];
 
@@ -163,8 +135,8 @@ test.describe("BalanceTestingLogic Unit Tests", () => {
     });
 
     test("should add error when actual win doesn't match expected", () => {
-      const mockPage = createMockPage() as Page;
-      const mockWheelGamePage = createMockWheelGamePage() as WheelGamePage;
+      const mockPage = createMockPageWithEvaluate({ sprite: "10x.png", winMultiplier: 10 }) as Page;
+      const mockWheelGamePage = createMockWheelGamePageWithData() as WheelGamePage;
       const logic = new BalanceTestingLogic(mockPage, mockWheelGamePage);
       const errors: string[] = [];
 
@@ -183,8 +155,8 @@ test.describe("BalanceTestingLogic Unit Tests", () => {
     });
 
     test("should add error when balance change is incorrect", () => {
-      const mockPage = createMockPage() as Page;
-      const mockWheelGamePage = createMockWheelGamePage() as WheelGamePage;
+      const mockPage = createMockPageWithEvaluate({ sprite: "10x.png", winMultiplier: 10 }) as Page;
+      const mockWheelGamePage = createMockWheelGamePageWithData() as WheelGamePage;
       const logic = new BalanceTestingLogic(mockPage, mockWheelGamePage);
       const errors: string[] = [];
 
@@ -205,8 +177,8 @@ test.describe("BalanceTestingLogic Unit Tests", () => {
     });
 
     test("should handle losing spin (zero win)", () => {
-      const mockPage = createMockPage() as Page;
-      const mockWheelGamePage = createMockWheelGamePage() as WheelGamePage;
+      const mockPage = createMockPageWithEvaluate({ sprite: "10x.png", winMultiplier: 10 }) as Page;
+      const mockWheelGamePage = createMockWheelGamePageWithData() as WheelGamePage;
       const logic = new BalanceTestingLogic(mockPage, mockWheelGamePage);
       const errors: string[] = [];
 
@@ -218,8 +190,8 @@ test.describe("BalanceTestingLogic Unit Tests", () => {
     });
 
     test("should handle break-even spin (1x multiplier)", () => {
-      const mockPage = createMockPage() as Page;
-      const mockWheelGamePage = createMockWheelGamePage() as WheelGamePage;
+      const mockPage = createMockPageWithEvaluate({ sprite: "10x.png", winMultiplier: 10 }) as Page;
+      const mockWheelGamePage = createMockWheelGamePageWithData() as WheelGamePage;
       const logic = new BalanceTestingLogic(mockPage, mockWheelGamePage);
       const errors: string[] = [];
 
@@ -241,8 +213,8 @@ test.describe("BalanceTestingLogic Unit Tests", () => {
 
   test.describe("parseDataTableToSliceTestData", () => {
     test("should parse single row DataTable correctly", () => {
-      const mockPage = createMockPage() as Page;
-      const mockWheelGamePage = createMockWheelGamePage() as WheelGamePage;
+      const mockPage = createMockPageWithEvaluate({ sprite: "10x.png", winMultiplier: 10 }) as Page;
+      const mockWheelGamePage = createMockWheelGamePageWithData() as WheelGamePage;
       const logic = new BalanceTestingLogic(mockPage, mockWheelGamePage);
 
       const dataTable = createMockDataTable([
@@ -260,8 +232,8 @@ test.describe("BalanceTestingLogic Unit Tests", () => {
     });
 
     test("should parse multiple rows DataTable correctly", () => {
-      const mockPage = createMockPage() as Page;
-      const mockWheelGamePage = createMockWheelGamePage() as WheelGamePage;
+      const mockPage = createMockPageWithEvaluate({ sprite: "10x.png", winMultiplier: 10 }) as Page;
+      const mockWheelGamePage = createMockWheelGamePageWithData() as WheelGamePage;
       const logic = new BalanceTestingLogic(mockPage, mockWheelGamePage);
 
       const dataTable = createMockDataTable([
@@ -279,8 +251,8 @@ test.describe("BalanceTestingLogic Unit Tests", () => {
     });
 
     test("should parse decimal multipliers correctly", () => {
-      const mockPage = createMockPage() as Page;
-      const mockWheelGamePage = createMockWheelGamePage() as WheelGamePage;
+      const mockPage = createMockPageWithEvaluate({ sprite: "10x.png", winMultiplier: 10 }) as Page;
+      const mockWheelGamePage = createMockWheelGamePageWithData() as WheelGamePage;
       const logic = new BalanceTestingLogic(mockPage, mockWheelGamePage);
 
       const dataTable = createMockDataTable([
@@ -293,8 +265,8 @@ test.describe("BalanceTestingLogic Unit Tests", () => {
     });
 
     test("should handle radix correctly for parseInt", () => {
-      const mockPage = createMockPage() as Page;
-      const mockWheelGamePage = createMockWheelGamePage() as WheelGamePage;
+      const mockPage = createMockPageWithEvaluate({ sprite: "10x.png", winMultiplier: 10 }) as Page;
+      const mockWheelGamePage = createMockWheelGamePageWithData() as WheelGamePage;
       const logic = new BalanceTestingLogic(mockPage, mockWheelGamePage);
 
       const dataTable = createMockDataTable([
@@ -311,7 +283,7 @@ test.describe("BalanceTestingLogic Unit Tests", () => {
 
   test.describe("validateSliceAndSpin - Success Cases", () => {
     test("should return no errors for valid slice configuration", async () => {
-      const mockPage = createMockPage({
+      const mockPage = createMockPageWithEvaluate({
         sprite: "10x.png",
         winMultiplier: 10,
       }) as Page;
@@ -349,7 +321,7 @@ test.describe("BalanceTestingLogic Unit Tests", () => {
     });
 
     test("should handle zero multiplier slice", async () => {
-      const mockPage = createMockPage({
+      const mockPage = createMockPageWithEvaluate({
         sprite: "0x.png",
         winMultiplier: 0,
       }) as Page;
@@ -387,12 +359,12 @@ test.describe("BalanceTestingLogic Unit Tests", () => {
 
   test.describe("validateSliceAndSpin - Error Cases", () => {
     test("should return error for invalid sprite filename", async () => {
-      const mockPage = createMockPage({
+      const mockPage = createMockPageWithEvaluate({
         sprite: "invalid.png",
         winMultiplier: 10,
       }) as Page;
 
-      const mockWheelGamePage = createMockWheelGamePage(
+      const mockWheelGamePage = createMockWheelGamePageWithData(
         1000,
         0,
         100
@@ -413,7 +385,7 @@ test.describe("BalanceTestingLogic Unit Tests", () => {
     });
 
     test("should detect sprite mismatch (known game bug)", async () => {
-      const mockPage = createMockPage({
+      const mockPage = createMockPageWithEvaluate({
         sprite: "5x.png",
         winMultiplier: 4, // Bug: shows 5x but configured as 4x
       }) as Page;
@@ -508,7 +480,7 @@ test.describe("BalanceTestingLogic Unit Tests", () => {
     });
 
     test("should throw error when validation fails", async () => {
-      const mockPage = createMockPage({
+      const mockPage = createMockPageWithEvaluate({
         sprite: "10x.png",
         winMultiplier: 10,
       }) as Page;

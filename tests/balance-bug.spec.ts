@@ -1,16 +1,10 @@
-import { test, expect } from "@playwright/test";
-import { WheelGamePage } from "../pages/WheelGamePage";
+import { test, expect } from "./fixtures/gameFixtures";
 import { TestLogger } from "../services/TestLogger";
 
 test.describe("Balance Calculation Bugs", () => {
-  let gamePage: WheelGamePage;
-
-  test.beforeEach(async ({ page }) => {
-    gamePage = WheelGamePage.create(page);
-    await gamePage.goto();
-  });
-
-  test("should correctly update balance when landing on 2X multiplier", async () => {
+  test("should correctly update balance when landing on 2X multiplier", async ({
+    gamePage,
+  }) => {
     // Set up test scenario
     const initialBalance = 1000;
     const betAmount = 50;
@@ -91,7 +85,9 @@ test.describe("Balance Calculation Bugs", () => {
     expect(balanceAfterSpin).toBe(expectedBalance);
   });
 
-  test("should correctly update balance for all multipliers", async () => {
+  test("should correctly update balance for all multipliers", async ({
+    gamePage,
+  }) => {
     // Test all slices to see which ones have incorrect balance calculations
     const initialBalance = 1000;
     const betAmount = 50;
@@ -156,7 +152,9 @@ test.describe("Balance Calculation Bugs", () => {
     expect(bugs.length).toBe(0);
   });
 
-  test("BUG REPORT: 2X multiplier balance calculation", async () => {
+  test("BUG REPORT: 2X multiplier balance calculation", async ({
+    gamePage,
+  }) => {
     // This test documents the specific 2X bug
     // Remove test.skip() when you want to run it
 

@@ -199,7 +199,9 @@ test.describe("SharedDistributionStore", () => {
   test.describe("integration scenarios", () => {
     test("should handle sequential store and retrieve operations", () => {
       const features = ["feature1", "feature2", "feature3"];
-      const dataSet = features.map((_, i) => createMockDistributionData(1000 * (i + 1)));
+      const dataSet = features.map((_, i) =>
+        createMockDistributionData(1000 * (i + 1))
+      );
 
       // Store all
       features.forEach((feature, i) => {

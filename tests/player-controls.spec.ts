@@ -1,17 +1,11 @@
-import { test, expect } from "@playwright/test";
-import { WheelGamePage } from "../pages/WheelGamePage";
-import { TestUtils } from "../utils/testUtils";
+import { test, expect } from "./fixtures/gameFixtures";
+import { GameConstants } from "../utils/testUtils";
 
 test.describe("Player Controls", () => {
-  let gamePage: WheelGamePage;
-
-  test.beforeEach(async ({ page }) => {
-    gamePage = WheelGamePage.create(page);
-    await gamePage.goto();
-  });
-
   test.describe("Bet Management", () => {
-    test("should increase bet when increment button is clicked", async () => {
+    test("should increase bet when increment button is clicked", async ({
+      gamePage,
+    }) => {
       const initialBet = await gamePage.data.getBet();
       await gamePage.increaseBet();
 
@@ -19,7 +13,9 @@ test.describe("Player Controls", () => {
       expect(newBet).toBe(initialBet + 10);
     });
 
-    test("should decrease bet when decrement button is clicked", async () => {
+    test("should decrease bet when decrement button is clicked", async ({
+      gamePage,
+    }) => {
       // First increase bet so we can decrease it
       await gamePage.increaseBet();
       const currentBet = await gamePage.data.getBet();
@@ -29,14 +25,16 @@ test.describe("Player Controls", () => {
       expect(newBet).toBe(currentBet - 10);
     });
 
-    test("should not allow bet to go below minimum", async () => {
+    test("should not allow bet to go below minimum", async ({ gamePage }) => {
       // Try to decrease bet below minimum
       await gamePage.decreaseBet();
       const bet = await gamePage.data.getBet();
       expect(bet).toBe(10); // Should remain at minimum
     });
 
-    test("should maintain bet changes across multiple operations", async () => {
+    test("should maintain bet changes across multiple operations", async ({
+      gamePage,
+    }) => {
       // Increase bet multiple times
       await gamePage.increaseBet();
       await gamePage.increaseBet();
@@ -48,7 +46,9 @@ test.describe("Player Controls", () => {
   });
 
   test.describe("Balance Management", () => {
-    test("should deduct bet amount from balance after spin", async () => {
+    test("should deduct bet amount from balance after spin", async ({
+      gamePage,
+    }) => {
       const initialBalance = await gamePage.data.getBalance();
       const betAmount = await gamePage.data.getBet();
 
@@ -62,7 +62,9 @@ test.describe("Player Controls", () => {
       expect(newBalance).toBe(initialBalance - betAmount);
     });
 
-    test("should handle custom balance using test hooks", async () => {
+    test("should handle custom balance using test hooks", async ({
+      gamePage,
+    }) => {
       await gamePage.testHooks.setPlayerData({ balance: 5000 });
 
       const balance = await gamePage.data.getBalance();
@@ -71,7 +73,7 @@ test.describe("Player Controls", () => {
   });
 
   test.describe("Autoplay Functionality", () => {
-    test("should toggle autoplay mode", async () => {
+    test("should toggle autoplay mode", async ({ gamePage }) => {
       const initialAutoplay = await gamePage.data.isAutoplayEnabled();
       await gamePage.toggleAutoplay();
 
@@ -79,7 +81,9 @@ test.describe("Player Controls", () => {
       expect(newAutoplay).toBe(!initialAutoplay);
     });
 
-    test("should start multiple rounds when autoplay is enabled", async () => {
+    test("should start multiple rounds when autoplay is enabled", async ({
+      gamePage,
+    }) => {
       // Force wheel to land on slice 2 (0x multiplier - losing spin)
       await gamePage.testHooks.setWheelLandingIndex(2);
 
@@ -101,7 +105,7 @@ test.describe("Player Controls", () => {
   });
 
   test.describe("Quick Spin Mode", () => {
-    test("should toggle quick spin mode", async () => {
+    test("should toggle quick spin mode", async ({ gamePage }) => {
       await gamePage.toggleQuickSpin();
 
       // Verify the checkbox is visible
@@ -110,10 +114,15 @@ test.describe("Player Controls", () => {
   });
 
   test.describe("Data-Driven Testing", () => {
-    const betScenarios = TestUtils.generateBetScenarios();
+    const betScenarios = [
+      { description: "minimum bet with low balance", balance: 100, bet: 10 },
+      { description: "medium bet with medium balance", balance: 500, bet: 50 },
+      { description: "high bet with high balance", balance: 10000, bet: 500 },
+      { description: "minimum bet with minimum balance", balance: 10, bet: 10 },
+    ];
 
     for (const scenario of betScenarios) {
-      test(`should handle ${scenario.description}`, async () => {
+      test(`should handle ${scenario.description}`, async ({ gamePage }) => {
         await gamePage.testHooks.setPlayerData({
           balance: scenario.balance,
           bet: scenario.bet,

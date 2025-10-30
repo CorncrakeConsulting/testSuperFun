@@ -7,41 +7,16 @@ import {
 import { WheelGamePage } from "../../pages/WheelGamePage";
 import { WheelState } from "../../types/WheelState";
 import { ILogger } from "../../services/TestLogger";
+import {
+  createMockPage,
+  createMockWheelGamePage,
+  createMockLogger,
+} from "../helpers/testMocks";
 
 /**
  * Unit tests for AutoplayTestingLogic
  * Tests configuration options, spin detection, and state transition tracking
  */
-
-// Helper to create a mock page
-function createMockPage(): Partial<Page> {
-  return {
-    waitForTimeout: async () => {},
-  } as any;
-}
-
-// Helper to create a mock WheelGamePage
-function createMockWheelGamePage(
-  wheelState: string = WheelState.Idle
-): Partial<WheelGamePage> {
-  return {
-    getWheelState: async () => wheelState,
-  } as any;
-}
-
-// Helper to create a mock logger
-function createMockLogger(): ILogger {
-  return {
-    info: () => {},
-    success: () => {},
-    warn: () => {},
-    error: () => {},
-    debug: () => {},
-    step: () => {},
-    spin: () => {},
-    logToFile: () => {},
-  };
-}
 
 test.describe("AutoplayTestingLogic Unit Tests", () => {
   test.describe("Constructor and Configuration", () => {

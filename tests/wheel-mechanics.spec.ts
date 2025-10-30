@@ -1,16 +1,10 @@
-import { test, expect } from "@playwright/test";
-import { WheelGamePage } from "../pages/WheelGamePage";
+import { test, expect } from "./fixtures/gameFixtures";
 
 test.describe("Wheel Mechanics and Win Scenarios", () => {
-  let gamePage: WheelGamePage;
-
-  test.beforeEach(async ({ page }) => {
-    gamePage = WheelGamePage.create(page);
-    await gamePage.goto();
-  });
-
   test.describe("Basic Spinning Mechanics", () => {
-    test("should spin wheel when spin button is clicked", async () => {
+    test("should spin wheel when spin button is clicked", async ({
+      gamePage,
+    }) => {
       const initialBalance = await gamePage.data.getBalance();
       const betAmount = await gamePage.data.getBet();
 
@@ -25,7 +19,9 @@ test.describe("Wheel Mechanics and Win Scenarios", () => {
       expect(newBalance).toBe(expectedBalance);
     });
 
-    test("should complete spin cycle within reasonable time", async () => {
+    test("should complete spin cycle within reasonable time", async ({
+      gamePage,
+    }) => {
       const startTime = Date.now();
 
       await gamePage.spin();
@@ -39,7 +35,7 @@ test.describe("Wheel Mechanics and Win Scenarios", () => {
       expect(spinDuration).toBeGreaterThan(500); // Should take at least 500ms
     });
 
-    test("should prevent multiple simultaneous spins", async () => {
+    test("should prevent multiple simultaneous spins", async ({ gamePage }) => {
       // Start first spin
       await gamePage.spin();
 
@@ -56,7 +52,9 @@ test.describe("Wheel Mechanics and Win Scenarios", () => {
   });
 
   test.describe("Deterministic Win Testing", () => {
-    test("should land on specified index when using test hook", async () => {
+    test("should land on specified index when using test hook", async ({
+      gamePage,
+    }) => {
       // Set wheel to land on specific slice
       const targetIndex = 0;
       await gamePage.testHooks.setWheelLandingIndex(targetIndex);
@@ -71,7 +69,9 @@ test.describe("Wheel Mechanics and Win Scenarios", () => {
       expect(win).toBeGreaterThanOrEqual(0);
     });
 
-    test("should calculate wins correctly for different slices", async () => {
+    test("should calculate wins correctly for different slices", async ({
+      gamePage,
+    }) => {
       const testCases = [
         { sliceIndex: 0, description: "first slice" },
         { sliceIndex: 1, description: "second slice" },
@@ -100,7 +100,7 @@ test.describe("Wheel Mechanics and Win Scenarios", () => {
       }
     });
 
-    test("should handle winning scenario correctly", async () => {
+    test("should handle winning scenario correctly", async ({ gamePage }) => {
       // Set up a winning scenario
       await gamePage.testHooks.setPlayerData({ balance: 1000, bet: 50 });
 
@@ -129,7 +129,7 @@ test.describe("Wheel Mechanics and Win Scenarios", () => {
   });
 
   test.describe("Random Spin Testing", () => {
-    test("should handle random spins without errors", async () => {
+    test("should handle random spins without errors", async ({ gamePage }) => {
       // Clear any forced landing index
       await gamePage.testHooks.setWheelLandingIndex(undefined);
 
@@ -151,7 +151,9 @@ test.describe("Wheel Mechanics and Win Scenarios", () => {
       }
     });
 
-    test("should maintain game state consistency across multiple spins", async () => {
+    test("should maintain game state consistency across multiple spins", async ({
+      gamePage,
+    }) => {
       await gamePage.testHooks.setPlayerData({ balance: 500, bet: 25 });
 
       let currentBalance = 500;
@@ -174,7 +176,7 @@ test.describe("Wheel Mechanics and Win Scenarios", () => {
   });
 
   test.describe("Edge Cases", () => {
-    test("should handle low balance scenario", async () => {
+    test("should handle low balance scenario", async ({ gamePage }) => {
       await gamePage.testHooks.setPlayerData({ balance: 15, bet: 10 });
 
       await gamePage.spin();
@@ -187,7 +189,7 @@ test.describe("Wheel Mechanics and Win Scenarios", () => {
       // (This behavior depends on game implementation)
     });
 
-    test("should handle maximum bet scenario", async () => {
+    test("should handle maximum bet scenario", async ({ gamePage }) => {
       await gamePage.testHooks.setPlayerData({ balance: 10000, bet: 1000 });
 
       await gamePage.spin();
@@ -197,7 +199,9 @@ test.describe("Wheel Mechanics and Win Scenarios", () => {
       expect(finalBalance).toBe(9000); // 10000 - 1000
     });
 
-    test("should reset wheel state after completed spin", async () => {
+    test("should reset wheel state after completed spin", async ({
+      gamePage,
+    }) => {
       await gamePage.spin();
       await gamePage.state.waitForWheelToStop();
 

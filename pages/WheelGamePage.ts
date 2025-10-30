@@ -108,6 +108,27 @@ export class WheelGamePage {
   }
 
   /**
+   * Spin and verify balance calculation is correct
+   * Formula: newBalance = oldBalance - bet + win
+   * @throws AssertionError if balance calculation is incorrect
+   */
+  async spinAndVerifyBalance(): Promise<void> {
+    const beforeData = await this.data.getCoreData();
+
+    await this.spin();
+    await this.state.waitForSpinComplete();
+
+    const afterData = await this.data.getCoreData();
+    const expectedBalance = beforeData.balance - beforeData.bet + afterData.win;
+
+    if (afterData.balance !== expectedBalance) {
+      throw new Error(
+        `Balance calculation incorrect: expected ${expectedBalance} (${beforeData.balance} - ${beforeData.bet} + ${afterData.win}), got ${afterData.balance}`
+      );
+    }
+  }
+
+  /**
    * Increase bet by clicking increment button
    */
   async increaseBet() {

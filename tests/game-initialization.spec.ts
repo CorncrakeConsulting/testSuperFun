@@ -1,21 +1,8 @@
-import { test, expect } from "@playwright/test";
-import { WheelGamePage } from "../pages/WheelGamePage";
+import { test, expect } from "./fixtures/gameFixtures";
 import { GameConstants } from "../utils/testUtils";
 
 test.describe("Game Initialization and UI", () => {
-  let gamePage: WheelGamePage;
-
-  test.beforeEach(async ({ page }) => {
-    // Using the Builder Pattern for dependency injection
-    gamePage = WheelGamePage.builder().withPage(page).build();
-
-    // Or use the convenience factory method (same result):
-    // gamePage = WheelGamePage.create(page);
-
-    await gamePage.goto();
-  });
-
-  test("should load the game successfully", async () => {
+  test("should load the game successfully", async ({ gamePage }) => {
     // Verify all UI elements are visible
     await gamePage.verifyUIElements();
 
@@ -28,7 +15,7 @@ test.describe("Game Initialization and UI", () => {
     expect(await gamePage.data.isAutoplayEnabled()).toBe(false);
   });
 
-  test("should display correct initial player data", async () => {
+  test("should display correct initial player data", async ({ gamePage }) => {
     const balance = await gamePage.data.getBalance();
     const bet = await gamePage.data.getBet();
     const win = await gamePage.data.getWin();
@@ -38,7 +25,9 @@ test.describe("Game Initialization and UI", () => {
     expect(win).toBe(0);
   });
 
-  test("should have functional canvas for game rendering", async () => {
+  test("should have functional canvas for game rendering", async ({
+    gamePage,
+  }) => {
     // Verify PixiJS canvas is present and visible
     await expect(gamePage.locators.wheel).toBeVisible();
 
@@ -51,7 +40,7 @@ test.describe("Game Initialization and UI", () => {
     }
   });
 
-  test("should expose test hooks on window object", async () => {
+  test("should expose test hooks on window object", async ({ gamePage }) => {
     const hasTestHooks = await gamePage.page.evaluate(() => {
       return (
         typeof (globalThis as typeof globalThis & Window).setPlayerData ===

@@ -28,6 +28,19 @@ export function createMockPage(overrides?: Partial<Page>): Partial<Page> {
 }
 
 /**
+ * Create a mock Page with evaluate function that returns specific data
+ */
+export function createMockPageWithEvaluate(
+  evaluateResult: any = {},
+  overrides?: Partial<Page>
+): Partial<Page> {
+  return createMockPage({
+    evaluate: async () => evaluateResult,
+    ...overrides,
+  });
+}
+
+/**
  * Create a mock WheelGamePage with configurable wheel state
  */
 export function createMockWheelGamePage(
@@ -39,6 +52,36 @@ export function createMockWheelGamePage(
   } as Partial<WheelGamePage>;
 
   return { ...defaultMock, ...overrides };
+}
+
+/**
+ * Create a mock WheelGamePage with balance, bet, and win data
+ */
+export function createMockWheelGamePageWithData(
+  balance: number = 1000,
+  bet: number = 10,
+  win: number = 0,
+  overrides?: Partial<WheelGamePage>
+): Partial<WheelGamePage> {
+  return {
+    data: {
+      getBalance: async () => balance,
+      getBet: async () => bet,
+      getWin: async () => win,
+      isAutoplayEnabled: async () => false,
+      getAutoplayText: async () => "Off",
+    } as any,
+    testHooks: {
+      setWheelLandingIndex: async () => {},
+      setPlayerData: async () => {},
+    } as any,
+    spin: async () => {},
+    state: {
+      waitForSpinComplete: async () => {},
+      isSpinning: async () => false,
+    } as any,
+    ...overrides,
+  } as any;
 }
 
 /**

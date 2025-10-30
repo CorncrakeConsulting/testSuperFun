@@ -1,5 +1,10 @@
 import { test, expect } from "@playwright/test";
 import { WheelGamePage } from "../../pages/WheelGamePage";
+import {
+  createMockPage,
+  createMockLocators,
+  createMockDataReader,
+} from "../helpers/testMocks";
 
 /**
  * Unit tests for WheelGamePage
@@ -167,45 +172,3 @@ test.describe("WheelGamePage Unit Tests", () => {
     });
   });
 });
-
-// Mock Factories
-function createMockPage() {
-  return {
-    goto: async () => {},
-    waitForSelector: async () => {},
-    waitForTimeout: async () => {},
-    locator: () => ({
-      waitFor: async () => {},
-      click: async () => {},
-      textContent: async () => "0",
-    }),
-    evaluate: async () => ({}),
-  };
-}
-
-function createMockLocators() {
-  return {
-    balanceDisplay: {
-      waitFor: async () => {},
-      textContent: async () => "Balance: 1000",
-    },
-    betDisplay: { waitFor: async () => {}, textContent: async () => "Bet: 10" },
-    winDisplay: { waitFor: async () => {}, textContent: async () => "Win: 0" },
-    spinButton: { waitFor: async () => {}, click: async () => {} },
-    incrementBetButton: { click: async () => {} },
-    decrementBetButton: { click: async () => {} },
-    autoplayButton: { click: async () => {} },
-    quickSpinCheckbox: { click: async () => {} },
-    wheel: { waitFor: async () => {} },
-  };
-}
-
-function createMockDataReader() {
-  return {
-    getBalance: async () => 1000,
-    getBet: async () => 10,
-    getWin: async () => 0,
-    isAutoplayEnabled: async () => false,
-    getAutoplayText: async () => "Off",
-  };
-}
