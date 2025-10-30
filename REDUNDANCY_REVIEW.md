@@ -3,6 +3,7 @@
 ## 🔴 CRITICAL: Delete These Completely Redundant Files
 
 ### 1. **BettingTestingLogic.ts** - 100% Redundant Wrapper
+
 **Location:** `logic/BettingTestingLogic.ts`
 **Issue:** Thin wrapper that only calls WheelGamePage methods
 **Used by:** 4 Cucumber step definitions
@@ -20,6 +21,7 @@ await this.wheelGamePage.increaseBet();
 ---
 
 ### 2. **GameControlTestingLogic.ts** - 100% Redundant Wrapper
+
 **Location:** `logic/GameControlTestingLogic.ts`
 **Issue:** Every method just forwards to WheelGamePage
 **Used by:** 4 Cucumber step definitions
@@ -37,6 +39,7 @@ await this.wheelGamePage.toggleAutoplay();
 ---
 
 ### 3. **GameSetupTestingLogic.ts** - 90% Redundant Wrapper
+
 **Location:** `logic/GameSetupTestingLogic.ts`
 **Issue:** Almost all methods just forward to WheelGamePage
 **Used by:** 7 Cucumber step definitions
@@ -56,14 +59,17 @@ await this.wheelGamePage.testHooks.setPlayerData({ balance: 1000 });
 ---
 
 ### 4. **SpinTestingLogic.ts** - Partially Redundant
+
 **Location:** `logic/SpinTestingLogic.ts`
 **Issue:** Mix of useful methods and redundant wrappers
 
 **Delete these methods (redundant):**
+
 - `spinWithTargetSlice()` - just calls WheelGamePage methods
 - `calibrateNormalSpeed()` / `calibrateQuickSpeed()` - thin wrappers
 
 **Keep these methods (useful):**
+
 - `spinWithContext()` - captures initial balance (useful abstraction)
 - `spinMultipleTimes()` - contains loop logic
 
@@ -72,6 +78,7 @@ await this.wheelGamePage.testHooks.setPlayerData({ balance: 1000 });
 ---
 
 ### 5. **TestResultsSink.ts** - Completely Unused
+
 **Location:** `logic/TestResultsSink.ts`
 **Issue:** 173 lines of code that's NEVER used
 **Used by:** Only instantiated in `world.ts`, never actually called
@@ -94,6 +101,7 @@ this.testResultsSink = new TestResultsSink();
 ## 🟡 MEDIUM: Redundant Methods in WheelGamePage
 
 ### 6. **Duplicate Quick Spin Methods**
+
 **Location:** `pages/WheelGamePage.ts`
 
 ```typescript
@@ -109,6 +117,7 @@ async disableQuickSpin() { ... } // Redundant - calls setQuickSpin(false)
 ---
 
 ### 7. **Duplicate Autoplay Methods**
+
 **Location:** `pages/WheelGamePage.ts`
 
 ```typescript
@@ -125,6 +134,7 @@ async disableAutoplay() { ... } // Check + toggle
 ## 🟢 LOW: Minor Redundancy
 
 ### 8. **TestUtils.calculateExpectedBalance()** - Too Simple
+
 **Location:** `utils/testUtils.ts`
 
 ```typescript
@@ -139,6 +149,7 @@ static calculateExpectedBalance(initialBalance: number, bet: number): number {
 ---
 
 ### 9. **Empty Folders**
+
 **Location:** `tests/logic/` - Empty folder
 **Location:** `src/` - Empty folder
 
@@ -149,23 +160,24 @@ static calculateExpectedBalance(initialBalance: number, bet: number): number {
 
 ## 📊 Summary
 
-| File/Method | Lines | Status | Priority |
-|-------------|-------|--------|----------|
-| BettingTestingLogic.ts | 26 | DELETE | HIGH |
-| GameControlTestingLogic.ts | 21 | DELETE | HIGH |
-| GameSetupTestingLogic.ts | 43 | REDUCE to 10 | HIGH |
-| SpinTestingLogic.ts | 47 | REDUCE to 20 | MEDIUM |
-| TestResultsSink.ts | 173 | DELETE | HIGH |
-| WheelGamePage quick spin helpers | 12 | DELETE | MEDIUM |
-| WheelGamePage autoplay helpers | 14 | DELETE | MEDIUM |
-| TestUtils.calculateExpectedBalance | 4 | DELETE | LOW |
-| **TOTAL SAVINGS** | **~330 lines** | | |
+| File/Method                        | Lines          | Status       | Priority |
+| ---------------------------------- | -------------- | ------------ | -------- |
+| BettingTestingLogic.ts             | 26             | DELETE       | HIGH     |
+| GameControlTestingLogic.ts         | 21             | DELETE       | HIGH     |
+| GameSetupTestingLogic.ts           | 43             | REDUCE to 10 | HIGH     |
+| SpinTestingLogic.ts                | 47             | REDUCE to 20 | MEDIUM   |
+| TestResultsSink.ts                 | 173            | DELETE       | HIGH     |
+| WheelGamePage quick spin helpers   | 12             | DELETE       | MEDIUM   |
+| WheelGamePage autoplay helpers     | 14             | DELETE       | MEDIUM   |
+| TestUtils.calculateExpectedBalance | 4              | DELETE       | LOW      |
+| **TOTAL SAVINGS**                  | **~330 lines** |              |          |
 
 ---
 
 ## 🎯 Recommended Action Plan
 
 ### Phase 1: Delete Dead Code (HIGH Priority)
+
 1. ✅ Delete `TestResultsSink.ts` (173 lines, never used)
 2. ✅ Delete `BettingTestingLogic.ts` (26 lines)
 3. ✅ Delete `GameControlTestingLogic.ts` (21 lines)
@@ -179,6 +191,7 @@ static calculateExpectedBalance(initialBalance: number, bet: number): number {
 ---
 
 ### Phase 2: Simplify GameSetupTestingLogic (HIGH Priority)
+
 1. ✅ Keep only `ensureAutoplayOff()` and `ensureAutoplayOn()`
 2. ✅ Delete all other methods (they're just wrappers)
 3. ✅ Update step definitions to use `wheelGamePage` directly
@@ -190,6 +203,7 @@ static calculateExpectedBalance(initialBalance: number, bet: number): number {
 ---
 
 ### Phase 3: Clean Up WheelGamePage (MEDIUM Priority)
+
 1. ✅ Delete `enableQuickSpin()` and `disableQuickSpin()`
 2. ✅ Delete `enableAutoplay()` and `disableAutoplay()`
 3. ✅ Update callers to use `setQuickSpin(boolean)` and `toggleAutoplay()`
@@ -201,6 +215,7 @@ static calculateExpectedBalance(initialBalance: number, bet: number): number {
 ---
 
 ### Phase 4: Refine SpinTestingLogic (MEDIUM Priority)
+
 1. ✅ Delete `calibrateNormalSpeed()` and `calibrateQuickSpeed()`
 2. ✅ Keep `spinWithContext()` and `spinMultipleTimes()`
 3. ✅ Update callers to use direct methods
@@ -212,6 +227,7 @@ static calculateExpectedBalance(initialBalance: number, bet: number): number {
 ---
 
 ### Phase 5: Minor Cleanup (LOW Priority)
+
 1. Delete `TestUtils.calculateExpectedBalance()`
 2. Use inline `initialBalance - bet` in tests
 
@@ -235,6 +251,7 @@ static calculateExpectedBalance(initialBalance: number, bet: number): number {
 ## ⚠️ What NOT to Delete
 
 ### Keep These (They Have Value)
+
 - ✅ **AssertionLogic** - Complex wait/assertion logic
 - ✅ **BalanceTestingLogic** - Win calculation validation
 - ✅ **DistributionTestingLogic** - Statistical analysis

@@ -4,7 +4,7 @@
  */
 
 import { WheelGamePage } from "../pages/WheelGamePage";
-import { TestLogger, ITestLogger } from "../services/TestLogger";
+import { TestLogger, ILogger } from "../services/TestLogger";
 import { CustomWorld } from "../tests/support/world";
 import { sharedDistributionStore } from "./SharedDistributionStore";
 
@@ -22,11 +22,11 @@ export class DistributionTestingLogic {
   private readonly wheelGamePage: WheelGamePage;
   private distributionData: DistributionData;
   private readonly world: CustomWorld;
-  private readonly logger: ITestLogger;
+  private readonly logger: ILogger;
   private readonly NUM_SLICES = 12; // Wheel has 12 slices
   private static readonly FEATURE_TAG = "distribution"; // Tag to identify this feature's data
 
-  constructor(world: CustomWorld, logger?: ITestLogger) {
+  constructor(world: CustomWorld, logger?: ILogger) {
     this.world = world;
     this.wheelGamePage = world.wheelGamePage;
     this.logger = logger ?? TestLogger.getDefault();

@@ -7,7 +7,10 @@ setDefaultTimeout(60000);
 
 When("the player clicks the spin button", async function (this: CustomWorld) {
   this.spinStartTime = Date.now();
-  const { initialBalance } = await new SpinTestingLogic(this.page, this.wheelGamePage).spinWithContext(this.targetSliceIndex);
+  const { initialBalance } = await new SpinTestingLogic(
+    this.page,
+    this.wheelGamePage
+  ).spinWithContext(this.targetSliceIndex);
   this.initialBalance = initialBalance;
   this.targetSliceIndex = undefined;
 });
@@ -91,13 +94,18 @@ When(
 When(
   "the player spins the wheel {int} times",
   async function (this: CustomWorld, times: number) {
-    await new SpinTestingLogic(this.page, this.wheelGamePage).spinMultipleTimes(times);
+    await new SpinTestingLogic(this.page, this.wheelGamePage).spinMultipleTimes(
+      times
+    );
   }
 );
 
 When(
   "the player spins the wheel landing on each slice and verifies the results and balance",
   async function (this: CustomWorld, dataTable) {
-    await new BalanceTestingLogic(this.page, this.wheelGamePage).validateAllSlicesFromDataTable(dataTable);
+    await new BalanceTestingLogic(
+      this.page,
+      this.wheelGamePage
+    ).validateAllSlicesFromDataTable(dataTable);
   }
 );

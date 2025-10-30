@@ -87,6 +87,27 @@ export class WheelGamePage {
   }
 
   /**
+   * Spin the wheel and wait for completion
+   * Convenience method combining spin() and waitForSpinComplete()
+   * @param timeout - Optional timeout for spin completion (default: 30000ms)
+   */
+  async spinAndWait(timeout?: number): Promise<void> {
+    await this.spin();
+    await this.state.waitForSpinComplete(timeout);
+  }
+
+  /**
+   * Spin the wheel multiple times with wait between each
+   * @param count - Number of spins to perform
+   * @param timeout - Optional timeout for each spin completion
+   */
+  async spinMultiple(count: number, timeout?: number): Promise<void> {
+    for (let i = 0; i < count; i++) {
+      await this.spinAndWait(timeout);
+    }
+  }
+
+  /**
    * Increase bet by clicking increment button
    */
   async increaseBet() {

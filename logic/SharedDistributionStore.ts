@@ -5,13 +5,13 @@
  */
 
 import { DistributionData } from "./DistributionTestingLogic";
-import { TestLogger, ITestLogger } from "../services/TestLogger";
+import { TestLogger, ILogger } from "../services/TestLogger";
 
-class SharedDistributionStore {
+export class SharedDistributionStore {
   private dataStore: Map<string, DistributionData> = new Map();
-  private readonly logger: ITestLogger;
+  private readonly logger: ILogger;
 
-  constructor(logger?: ITestLogger) {
+  constructor(logger?: ILogger) {
     this.logger = logger ?? TestLogger.getDefault();
   }
 

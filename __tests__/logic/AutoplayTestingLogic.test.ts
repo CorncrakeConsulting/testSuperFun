@@ -6,7 +6,7 @@ import {
 } from "../../logic/AutoplayTestingLogic";
 import { WheelGamePage } from "../../pages/WheelGamePage";
 import { WheelState } from "../../types/WheelState";
-import { ITestLogger } from "../../services/TestLogger";
+import { ILogger } from "../../services/TestLogger";
 
 /**
  * Unit tests for AutoplayTestingLogic
@@ -30,7 +30,7 @@ function createMockWheelGamePage(
 }
 
 // Helper to create a mock logger
-function createMockLogger(): ITestLogger {
+function createMockLogger(): ILogger {
   return {
     info: () => {},
     success: () => {},
@@ -39,6 +39,7 @@ function createMockLogger(): ITestLogger {
     debug: () => {},
     step: () => {},
     spin: () => {},
+    logToFile: () => {},
   };
 }
 

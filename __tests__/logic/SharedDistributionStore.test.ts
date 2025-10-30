@@ -1,9 +1,9 @@
-import { describe, test, expect, beforeEach } from "@playwright/test";
+import { test, expect } from "@playwright/test";
 import { SharedDistributionStore } from "../../logic/SharedDistributionStore";
 import { DistributionData } from "../../logic/DistributionTestingLogic";
 import { TestLogger } from "../../services/TestLogger";
 
-describe("SharedDistributionStore", () => {
+test.describe("SharedDistributionStore", () => {
   let store: SharedDistributionStore;
   let mockLogger: ReturnType<typeof TestLogger.createMockLogger>;
 
@@ -18,12 +18,12 @@ describe("SharedDistributionStore", () => {
     sliceConfig: { 0: 10, 1: 5, 2: 0 },
   });
 
-  beforeEach(() => {
+  test.beforeEach(() => {
     mockLogger = TestLogger.createMockLogger();
     store = new SharedDistributionStore(mockLogger);
   });
 
-  describe("constructor", () => {
+  test.describe("constructor", () => {
     test("should create instance with injected logger", () => {
       expect(store).toBeDefined();
     });
@@ -34,7 +34,7 @@ describe("SharedDistributionStore", () => {
     });
   });
 
-  describe("setDistributionData", () => {
+  test.describe("setDistributionData", () => {
     test("should store distribution data for a feature tag", () => {
       const data = createMockDistributionData();
       const featureTag = "test-feature";
@@ -51,7 +51,8 @@ describe("SharedDistributionStore", () => {
 
       store.setDistributionData(data, featureTag);
 
-      expect(mockLogger.debug).toHaveBeenCalledWith(
+      expect(mockLogger.calls.debug.length).toBe(1);
+      expect(mockLogger.calls.debug[0][0]).toBe(
         `📦 Stored distribution data for feature: ${featureTag}`
       );
     });
@@ -81,7 +82,7 @@ describe("SharedDistributionStore", () => {
     });
   });
 
-  describe("getDistributionData", () => {
+  test.describe("getDistributionData", () => {
     test("should return null when no data exists for feature tag", () => {
       const result = store.getDistributionData("non-existent");
 
@@ -93,7 +94,8 @@ describe("SharedDistributionStore", () => {
 
       store.getDistributionData(featureTag);
 
-      expect(mockLogger.debug).toHaveBeenCalledWith(
+      expect(mockLogger.calls.debug.length).toBe(1);
+      expect(mockLogger.calls.debug[0][0]).toBe(
         `📦 No stored data found for feature: ${featureTag}`
       );
     });
@@ -113,10 +115,12 @@ describe("SharedDistributionStore", () => {
       const featureTag = "test-feature";
 
       store.setDistributionData(data, featureTag);
-      mockLogger.debug.mockClear(); // Clear the set call
+      const callCountBeforeGet = mockLogger.calls.debug.length;
       store.getDistributionData(featureTag);
 
-      expect(mockLogger.debug).toHaveBeenCalledWith(
+      // Should have one more debug call after get
+      expect(mockLogger.calls.debug.length).toBe(callCountBeforeGet + 1);
+      expect(mockLogger.calls.debug[callCountBeforeGet][0]).toBe(
         `📦 Retrieved stored distribution data for feature: ${featureTag}`
       );
     });
@@ -192,7 +196,7 @@ describe("SharedDistributionStore", () => {
     });
   });
 
-  describe("integration scenarios", () => {
+  test.describe("integration scenarios", () => {
     test("should handle sequential store and retrieve operations", () => {
       const features = ["feature1", "feature2", "feature3"];
       const dataSet = features.map((_, i) => createMockDistributionData(1000 * (i + 1)));
@@ -249,7 +253,7 @@ describe("SharedDistributionStore", () => {
     });
   });
 
-  describe("exported singleton instance", () => {
+  test.describe("exported singleton instance", () => {
     test("should export a shared instance", async () => {
       const { sharedDistributionStore } = await import(
         "../../logic/SharedDistributionStore"

@@ -1,6 +1,6 @@
 import { Page, expect } from "@playwright/test";
 import { WheelGamePage } from "../pages/WheelGamePage";
-import { TestLogger, ITestLogger } from "../services/TestLogger";
+import { TestLogger, ILogger } from "../services/TestLogger";
 
 export interface MultiplierTestResult {
   sliceIndex?: number;
@@ -16,12 +16,12 @@ export interface MultiplierTestResult {
 }
 
 export class AssertionLogic {
-  private readonly logger: ITestLogger;
+  private readonly logger: ILogger;
 
   constructor(
     private readonly page: Page,
     private readonly wheelGamePage: WheelGamePage,
-    logger?: ITestLogger
+    logger?: ILogger
   ) {
     this.logger = logger ?? TestLogger.getDefault();
   }

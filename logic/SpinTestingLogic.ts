@@ -6,15 +6,22 @@ export interface SpinWithContextResult {
 }
 
 export class SpinTestingLogic {
-  constructor(private readonly page: Page, private readonly wheelGamePage: WheelGamePage) {}
+  constructor(
+    private readonly page: Page,
+    private readonly wheelGamePage: WheelGamePage
+  ) {}
 
-  async spinWithContext(targetSliceIndex: number | undefined): Promise<SpinWithContextResult> {
+  async spinWithContext(
+    targetSliceIndex: number | undefined
+  ): Promise<SpinWithContextResult> {
     const initialBalance = await this.wheelGamePage.data.getBalance();
     await this.spinWithTargetSlice(targetSliceIndex);
     return { initialBalance };
   }
 
-  async spinWithTargetSlice(targetSliceIndex: number | undefined): Promise<void> {
+  async spinWithTargetSlice(
+    targetSliceIndex: number | undefined
+  ): Promise<void> {
     // Apply test hook if a target slice has been set
     if (targetSliceIndex !== undefined) {
       console.log(`🎯 Setting wheel to land on slice ${targetSliceIndex}`);

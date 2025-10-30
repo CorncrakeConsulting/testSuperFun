@@ -64,7 +64,7 @@ test.describe("Balance Calculation Bugs", () => {
     await gamePage.testHooks.setWheelLandingIndex(twoXSliceIndex);
 
     const balanceBeforeSpin = await gamePage.data.getBalance();
-    const betBeforeSpin = await gamePage.getBet();
+    const betBeforeSpin = await gamePage.data.getBet();
 
     await gamePage.spin();
     await gamePage.state.waitForWheelToStop();
