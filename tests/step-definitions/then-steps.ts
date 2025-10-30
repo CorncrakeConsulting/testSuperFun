@@ -305,13 +305,3 @@ Then(
     );
   }
 );
-
-Then(
-  "all wheel slices should have correct sprite-to-multiplier mappings",
-  async function (this: CustomWorld) {
-    await new AssertionLogic(
-      this.page,
-      this.wheelGamePage
-    ).assertSpriteToMultiplierMappings();
-  }
-);

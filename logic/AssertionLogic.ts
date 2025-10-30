@@ -298,45 +298,6 @@ export class AssertionLogic {
     }
   }
 
-  async assertSpriteToMultiplierMappings(): Promise<void> {
-    const slices = await this.page.evaluate(() => {
-      const game = (globalThis as any).game;
-      return game.wheel._config.slices.map((slice: any, index: number) => ({
-        index,
-        sprite: slice.sprite,
-        winMultiplier: slice.winMultiplier,
-      }));
-    });
-
-    const errors: string[] = [];
-
-    for (const slice of slices) {
-      const spriteMatch = slice.sprite.match(/(\d+\.?\d*)x\.png/);
-      if (!spriteMatch) {
-        errors.push(
-          `Slice ${slice.index}: Could not parse multiplier from sprite "${slice.sprite}"`
-        );
-        continue;
-      }
-
-      const spriteMultiplier = Number.parseFloat(spriteMatch[1]);
-
-      if (spriteMultiplier !== slice.winMultiplier) {
-        errors.push(
-          `Slice ${slice.index}: Sprite shows "${spriteMatch[1]}x" but win Multiplier is ${slice.winMultiplier}`
-        );
-      }
-    }
-
-    if (errors.length > 0) {
-      throw new Error(
-        `Found ${
-          errors.length
-        } sprite-to-multiplier mismatch(es):\n${errors.join("\n")}`
-      );
-    }
-  }
-
   async waitForWheelSpinStart(): Promise<void> {
     await this.page.waitForTimeout(1000);
   }

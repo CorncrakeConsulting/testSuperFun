@@ -12,27 +12,27 @@ test.describe("Player Controls", () => {
 
   test.describe("Bet Management", () => {
     test("should increase bet when increment button is clicked", async () => {
-      const initialBet = await gamePage.getBet();
+      const initialBet = await gamePage.data.getBet();
       await gamePage.increaseBet();
 
-      const newBet = await gamePage.getBet();
+      const newBet = await gamePage.data.getBet();
       expect(newBet).toBe(initialBet + 10);
     });
 
     test("should decrease bet when decrement button is clicked", async () => {
       // First increase bet so we can decrease it
       await gamePage.increaseBet();
-      const currentBet = await gamePage.getBet();
+      const currentBet = await gamePage.data.getBet();
 
       await gamePage.decreaseBet();
-      const newBet = await gamePage.getBet();
+      const newBet = await gamePage.data.getBet();
       expect(newBet).toBe(currentBet - 10);
     });
 
     test("should not allow bet to go below minimum", async () => {
       // Try to decrease bet below minimum
       await gamePage.decreaseBet();
-      const bet = await gamePage.getBet();
+      const bet = await gamePage.data.getBet();
       expect(bet).toBe(10); // Should remain at minimum
     });
 
@@ -42,46 +42,52 @@ test.describe("Player Controls", () => {
       await gamePage.increaseBet();
       await gamePage.increaseBet();
 
-      const finalBet = await gamePage.getBet();
+      const finalBet = await gamePage.data.getBet();
       expect(finalBet).toBe(40); // 10 + 30
     });
   });
 
   test.describe("Balance Management", () => {
     test("should deduct bet amount from balance after spin", async () => {
-      const initialBalance = await gamePage.getBalance();
-      const betAmount = await gamePage.getBet();
+      const initialBalance = await gamePage.data.getBalance();
+      const betAmount = await gamePage.data.getBet();
+
+      // Force wheel to land on slice 2 (0x multiplier - losing spin)
+      await gamePage.testHooks.setWheelLandingIndex(2);
 
       await gamePage.spin();
-      await gamePage.waitForWheelToStop();
+      await gamePage.state.waitForWheelToStop();
 
-      const newBalance = await gamePage.getBalance();
+      const newBalance = await gamePage.data.getBalance();
       expect(newBalance).toBe(initialBalance - betAmount);
     });
 
     test("should handle custom balance using test hooks", async () => {
-      await gamePage.setPlayerData({ balance: 5000 });
+      await gamePage.testHooks.setPlayerData({ balance: 5000 });
 
-      const balance = await gamePage.getBalance();
+      const balance = await gamePage.data.getBalance();
       expect(balance).toBe(5000);
     });
   });
 
   test.describe("Autoplay Functionality", () => {
     test("should toggle autoplay mode", async () => {
-      const initialAutoplay = await gamePage.isAutoplayEnabled();
+      const initialAutoplay = await gamePage.data.isAutoplayEnabled();
       await gamePage.toggleAutoplay();
 
-      const newAutoplay = await gamePage.isAutoplayEnabled();
+      const newAutoplay = await gamePage.data.isAutoplayEnabled();
       expect(newAutoplay).toBe(!initialAutoplay);
     });
 
     test("should start multiple rounds when autoplay is enabled", async () => {
+      // Force wheel to land on slice 2 (0x multiplier - losing spin)
+      await gamePage.testHooks.setWheelLandingIndex(2);
+
       // Enable autoplay
       await gamePage.toggleAutoplay();
-      expect(await gamePage.isAutoplayEnabled()).toBe(true);
+      expect(await gamePage.data.isAutoplayEnabled()).toBe(true);
 
-      const initialBalance = await gamePage.getBalance();
+      const initialBalance = await gamePage.data.getBalance();
 
       // Trigger first spin
       await gamePage.spin();
@@ -89,7 +95,7 @@ test.describe("Player Controls", () => {
       // Wait for multiple rounds (autoplay should continue)
       await gamePage.page.waitForTimeout(3000);
 
-      const finalBalance = await gamePage.getBalance();
+      const finalBalance = await gamePage.data.getBalance();
       expect(finalBalance).toBeLessThan(initialBalance);
     });
   });
@@ -98,10 +104,8 @@ test.describe("Player Controls", () => {
     test("should toggle quick spin mode", async () => {
       await gamePage.toggleQuickSpin();
 
-      // Verify the checkbox state changed
-      // Note: This test might need adjustment based on actual UI implementation
-      const quickSpinButton = gamePage.quickSpinCheckbox;
-      await expect(quickSpinButton).toBeVisible();
+      // Verify the checkbox is visible
+      await expect(gamePage.locators.quickSpinCheckbox).toBeVisible();
     });
   });
 
@@ -110,22 +114,28 @@ test.describe("Player Controls", () => {
 
     for (const scenario of betScenarios) {
       test(`should handle ${scenario.description}`, async () => {
-        await gamePage.setPlayerData({
+        await gamePage.testHooks.setPlayerData({
           balance: scenario.balance,
           bet: scenario.bet,
         });
 
-        const balance = await gamePage.getBalance();
-        const bet = await gamePage.getBet();
+        // Small wait to ensure data is applied (especially in webkit)
+        await gamePage.page.waitForTimeout(100);
+
+        const balance = await gamePage.data.getBalance();
+        const bet = await gamePage.data.getBet();
 
         expect(balance).toBe(scenario.balance);
         expect(bet).toBe(scenario.bet);
 
+        // Force wheel to land on slice 2 (0x multiplier - losing spin)
+        await gamePage.testHooks.setWheelLandingIndex(2);
+
         // Test that spinning works with this configuration
         await gamePage.spin();
-        await gamePage.waitForWheelToStop();
+        await gamePage.state.waitForWheelToStop();
 
-        const newBalance = await gamePage.getBalance();
+        const newBalance = await gamePage.data.getBalance();
         expect(newBalance).toBe(scenario.balance - scenario.bet);
       });
     }

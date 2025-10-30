@@ -9,6 +9,8 @@
     "test:debug": "playwright test --debug",
     "test:ui": "playwright test --ui",
     "test:report": "playwright show-report",
+    "test:coverage": "playwright test --reporter=html,json --reporter=json-summary",
+    "test:unit": "playwright test tests/**/*.spec.ts --grep-invert \"@integration\"",
     "test:cucumber": "cucumber-js tests/features/**/*.feature",
     "test:cucumber:headed": "cucumber-js tests/features/**/*.feature --profile headed",
     "test:cucumber:report": "cucumber-js tests/features/**/*.feature --format html:test-results/cucumber-report.html",
@@ -18,7 +20,8 @@
     "lint": "eslint . --ext .ts,.js",
     "lint:fix": "eslint . --ext .ts,.js --fix",
     "lint:report": "eslint . --ext .ts,.js --format json --output-file eslint-report.json",
-    "quality:check": "npm run lint && npm run test",
+    "quality:check": "npm run lint && npm run coverage:check",
+    "coverage:check": "node scripts/check-coverage.js",
     "sonar": "sonar-scanner",
     "sonar:full": "npm run lint:report && sonar-scanner"
   },

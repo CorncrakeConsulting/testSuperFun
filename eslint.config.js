@@ -62,6 +62,17 @@ export default tseslint.config(
     },
   },
 
+  // Logic files must have corresponding test coverage
+  {
+    files: ["logic/**/*.ts"],
+    rules: {
+      // Enforce stricter rules for logic files that should be well-tested
+      "@typescript-eslint/no-explicit-any": "error",
+      "sonarjs/cognitive-complexity": ["error", 10],
+      complexity: ["error", 10],
+    },
+  },
+
   // Ignore patterns
   {
     ignores: [
