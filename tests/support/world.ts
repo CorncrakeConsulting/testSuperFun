@@ -3,7 +3,6 @@ import { Page } from "@playwright/test";
 import { WheelGamePage } from "../../pages/WheelGamePage";
 import { DistributionTestingLogic } from "../../logic/DistributionTestingLogic";
 import { AutoplayTestingLogic } from "../../logic/AutoplayTestingLogic";
-import { TestResultsSink } from "../../logic/TestResultsSink";
 
 export interface MultiplierTestResult {
   sliceIndex?: number;
@@ -24,7 +23,6 @@ export interface CustomWorld extends World {
   wheelGamePage: WheelGamePage;
   distributionLogic: DistributionTestingLogic;
   autoplayLogic: AutoplayTestingLogic;
-  testResultsSink: TestResultsSink;
   balanceBeforeSpin?: number;
   balanceAfterFirstSpin?: number;
   multiplierTestResults?: MultiplierTestResult[];
@@ -40,7 +38,6 @@ export class CustomWorldImpl extends World implements CustomWorld {
   wheelGamePage!: WheelGamePage;
   distributionLogic!: DistributionTestingLogic;
   autoplayLogic!: AutoplayTestingLogic;
-  testResultsSink!: TestResultsSink;
   balanceBeforeSpin?: number;
   balanceAfterFirstSpin?: number;
   multiplierTestResults?: MultiplierTestResult[];
@@ -52,7 +49,6 @@ export class CustomWorldImpl extends World implements CustomWorld {
 
   constructor(options: IWorldOptions) {
     super(options);
-    this.testResultsSink = new TestResultsSink();
   }
 }
 

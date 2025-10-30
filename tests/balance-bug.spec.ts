@@ -15,7 +15,7 @@ test.describe("Balance Calculation Bugs", () => {
     const initialBalance = 1000;
     const betAmount = 50;
 
-    await gamePage.setPlayerData({
+    await gamePage.testHooks.setPlayerData({
       balance: initialBalance,
       bet: betAmount,
       win: 0,
@@ -26,19 +26,19 @@ test.describe("Balance Calculation Bugs", () => {
 
     for (let sliceIndex = 0; sliceIndex < 8; sliceIndex++) {
       // Reset state for each test
-      await gamePage.setPlayerData({
+      await gamePage.testHooks.setPlayerData({
         balance: initialBalance,
         bet: betAmount,
         win: 0,
       });
 
       // Force wheel to land on this slice
-      await gamePage.setWheelLandingIndex(sliceIndex);
+      await gamePage.testHooks.setWheelLandingIndex(sliceIndex);
 
       await gamePage.spin();
-      await gamePage.waitForWheelToStop();
+      await gamePage.state.waitForWheelToStop();
 
-      const win = await gamePage.getWin();
+      const win = await gamePage.data.getWin();
 
       // Check if this is the 2X slice (win should be 2 * bet)
       if (win === betAmount * 2) {
@@ -55,22 +55,22 @@ test.describe("Balance Calculation Bugs", () => {
     }
 
     // Now test the actual bug: balance calculation with 2X
-    await gamePage.setPlayerData({
+    await gamePage.testHooks.setPlayerData({
       balance: initialBalance,
       bet: betAmount,
       win: 0,
     });
 
-    await gamePage.setWheelLandingIndex(twoXSliceIndex);
+    await gamePage.testHooks.setWheelLandingIndex(twoXSliceIndex);
 
-    const balanceBeforeSpin = await gamePage.getBalance();
+    const balanceBeforeSpin = await gamePage.data.getBalance();
     const betBeforeSpin = await gamePage.getBet();
 
     await gamePage.spin();
-    await gamePage.waitForWheelToStop();
+    await gamePage.state.waitForWheelToStop();
 
-    const balanceAfterSpin = await gamePage.getBalance();
-    const winAmount = await gamePage.getWin();
+    const balanceAfterSpin = await gamePage.data.getBalance();
+    const winAmount = await gamePage.data.getWin();
 
     // Expected calculation:
     // New Balance = Initial Balance - Bet + Win
@@ -105,19 +105,19 @@ test.describe("Balance Calculation Bugs", () => {
 
     for (let sliceIndex = 0; sliceIndex < 8; sliceIndex++) {
       // Reset for each spin
-      await gamePage.setPlayerData({
+      await gamePage.testHooks.setPlayerData({
         balance: initialBalance,
         bet: betAmount,
         win: 0,
       });
 
-      await gamePage.setWheelLandingIndex(sliceIndex);
+      await gamePage.testHooks.setWheelLandingIndex(sliceIndex);
 
       await gamePage.spin();
-      await gamePage.waitForWheelToStop();
+      await gamePage.state.waitForWheelToStop();
 
-      const actualBalance = await gamePage.getBalance();
-      const winAmount = await gamePage.getWin();
+      const actualBalance = await gamePage.data.getBalance();
+      const winAmount = await gamePage.data.getWin();
       const multiplier = winAmount / betAmount;
       const expectedBalance = initialBalance - betAmount + winAmount;
 
@@ -166,16 +166,16 @@ test.describe("Balance Calculation Bugs", () => {
     // Find 2X slice
     let twoXSlice: number | undefined;
     for (let i = 0; i < 8; i++) {
-      await gamePage.setPlayerData({
+      await gamePage.testHooks.setPlayerData({
         balance: initialBalance,
         bet: betAmount,
         win: 0,
       });
-      await gamePage.setWheelLandingIndex(i);
+      await gamePage.testHooks.setWheelLandingIndex(i);
       await gamePage.spin();
-      await gamePage.waitForWheelToStop();
+      await gamePage.state.waitForWheelToStop();
 
-      const win = await gamePage.getWin();
+      const win = await gamePage.data.getWin();
       if (win === betAmount * 2) {
         twoXSlice = i;
         break;
@@ -189,13 +189,13 @@ test.describe("Balance Calculation Bugs", () => {
     }
 
     // Reproduce the bug
-    await gamePage.setPlayerData({ balance: 1000, bet: 50, win: 0 });
-    await gamePage.setWheelLandingIndex(twoXSlice);
+    await gamePage.testHooks.setPlayerData({ balance: 1000, bet: 50, win: 0 });
+    await gamePage.testHooks.setWheelLandingIndex(twoXSlice);
     await gamePage.spin();
-    await gamePage.waitForWheelToStop();
+    await gamePage.state.waitForWheelToStop();
 
-    const finalBalance = await gamePage.getBalance();
-    const winAmount = await gamePage.getWin();
+    const finalBalance = await gamePage.data.getBalance();
+    const winAmount = await gamePage.data.getWin();
 
     TestLogger.info("\n🐛 BUG REPORT: 2X Balance Calculation");
     TestLogger.info("=====================================");

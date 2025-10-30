@@ -31,19 +31,4 @@ export class SpinTestingLogic {
       await this.wheelGamePage.state.waitForSpinComplete();
     }
   }
-
-  async calibrateSpinSpeed(): Promise<number> {
-    const startTime = Date.now();
-    await this.wheelGamePage.spin();
-    await this.wheelGamePage.state.waitForSpinComplete();
-    return Date.now() - startTime;
-  }
-
-  async calibrateNormalSpeed(): Promise<number> {
-    return await this.calibrateSpinSpeed();
-  }
-
-  async calibrateQuickSpeed(): Promise<number> {
-    return await this.calibrateSpinSpeed();
-  }
 }

@@ -145,26 +145,6 @@ export class WheelGamePage {
   }
 
   /**
-   * Enable autoplay if not already enabled
-   */
-  async enableAutoplay(): Promise<void> {
-    const isEnabled = await this.data.isAutoplayEnabled();
-    if (!isEnabled) {
-      await this.toggleAutoplay();
-    }
-  }
-
-  /**
-   * Disable autoplay if currently enabled
-   */
-  async disableAutoplay(): Promise<void> {
-    const isEnabled = await this.data.isAutoplayEnabled();
-    if (isEnabled) {
-      await this.toggleAutoplay();
-    }
-  }
-
-  /**
    * Wait for specific balance value
    */
   async waitForBalance(expectedBalance: number, timeout: number = 5000) {

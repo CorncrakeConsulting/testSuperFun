@@ -73,13 +73,6 @@ export class TestUtils {
   }
 
   /**
-   * Calculate expected balance after spin
-   */
-  static calculateExpectedBalance(initialBalance: number, bet: number): number {
-    return initialBalance - bet;
-  }
-
-  /**
    * Wait for a specific condition with polling
    */
   static async waitForCondition(

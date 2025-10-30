@@ -16,21 +16,21 @@ Given("the game is loaded", async function (this: CustomWorld) {
 Given(
   "the player has a balance of {int}",
   async function (this: CustomWorld, balance: number) {
-    await new GameSetupTestingLogic(this.wheelGamePage).setBalance(balance);
+    await this.wheelGamePage.testHooks.setPlayerData({ balance });
   }
 );
 
 Given(
   "the player has placed a bet of {int}",
   async function (this: CustomWorld, bet: number) {
-    await new GameSetupTestingLogic(this.wheelGamePage).setBet(bet);
+    await this.wheelGamePage.testHooks.setPlayerData({ bet });
   }
 );
 
 Given(
   "the player bet is {int}",
   async function (this: CustomWorld, bet: number) {
-    await new GameSetupTestingLogic(this.wheelGamePage).setBet(bet);
+    await this.wheelGamePage.testHooks.setPlayerData({ bet });
   }
 );
 
@@ -51,22 +51,23 @@ Given("autoplay is on", async function (this: CustomWorld) {
 });
 
 Given("autoplay is enabled", async function (this: CustomWorld) {
-  await new GameSetupTestingLogic(this.wheelGamePage).enableAutoplay();
+  const isEnabled = await this.wheelGamePage.data.isAutoplayEnabled();
+  if (!isEnabled) {
+    await this.wheelGamePage.toggleAutoplay();
+  }
 });
 
 Given("quick spin is enabled", async function (this: CustomWorld) {
-  await new GameSetupTestingLogic(this.wheelGamePage).enableQuickSpin();
+  await this.wheelGamePage.enableQuickSpin();
 });
 
 Given("quick spin is disabled", async function (this: CustomWorld) {
-  await new GameSetupTestingLogic(this.wheelGamePage).disableQuickSpin();
+  await this.wheelGamePage.disableQuickSpin();
 });
 
 Given(
   "the wheel lands on a winning slice with {int}x multiplier",
   async function (this: CustomWorld, multiplier: number) {
-    await new GameSetupTestingLogic(
-      this.wheelGamePage
-    ).setWheelToLandOnWinningSlice(multiplier);
+    await this.wheelGamePage.testHooks.setWheelLandingMultiplier(multiplier);
   }
 );

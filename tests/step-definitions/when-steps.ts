@@ -2,8 +2,6 @@ import { When, setDefaultTimeout } from "@cucumber/cucumber";
 import { CustomWorld } from "../support/world";
 import { BalanceTestingLogic } from "../../logic/BalanceTestingLogic";
 import { SpinTestingLogic } from "../../logic/SpinTestingLogic";
-import { BettingTestingLogic } from "../../logic/BettingTestingLogic";
-import { GameControlTestingLogic } from "../../logic/GameControlTestingLogic";
 
 setDefaultTimeout(60000);
 
@@ -17,57 +15,64 @@ When("the player clicks the spin button", async function (this: CustomWorld) {
 When(
   "the player clicks the increment bet button",
   async function (this: CustomWorld) {
-    await new BettingTestingLogic(this.wheelGamePage).increaseBet();
+    await this.wheelGamePage.increaseBet();
   }
 );
 
 When(
   "the player clicks the increment bet button {int} times",
   async function (this: CustomWorld, times: number) {
-    await new BettingTestingLogic(this.wheelGamePage).increaseBetMultipleTimes(times);
+    for (let i = 0; i < times; i++) {
+      await this.wheelGamePage.increaseBet();
+    }
   }
 );
 
 When(
   "the player clicks the decrement bet button",
   async function (this: CustomWorld) {
-    await new BettingTestingLogic(this.wheelGamePage).decreaseBet();
+    await this.wheelGamePage.decreaseBet();
   }
 );
 
 When(
   "the player clicks the decrement bet button {int} times",
   async function (this: CustomWorld, times: number) {
-    await new BettingTestingLogic(this.wheelGamePage).decreaseBetMultipleTimes(times);
+    for (let i = 0; i < times; i++) {
+      await this.wheelGamePage.decreaseBet();
+    }
   }
 );
 
 When(
   "the player clicks the autoplay button",
   async function (this: CustomWorld) {
-    await new GameControlTestingLogic(this.wheelGamePage).toggleAutoplay();
+    await this.wheelGamePage.toggleAutoplay();
   }
 );
 
 When(
   "the player balance is set to {int} using test hooks",
   async function (this: CustomWorld, balance: number) {
-    await new GameControlTestingLogic(this.wheelGamePage).setBalanceUsingTestHook(balance);
+    await this.wheelGamePage.testHooks.setPlayerData({ balance });
   }
 );
 
 When("the player enables quick spin", async function (this: CustomWorld) {
-  await new GameControlTestingLogic(this.wheelGamePage).enableQuickSpin();
+  await this.wheelGamePage.enableQuickSpin();
 });
 
 When("the player disables quick spin", async function (this: CustomWorld) {
-  await new GameControlTestingLogic(this.wheelGamePage).disableQuickSpin();
+  await this.wheelGamePage.disableQuickSpin();
 });
 
 When(
   "the player clicks the spin button to calibrate normal speed",
   async function (this: CustomWorld) {
-    this.normalSpinBaseline = await new SpinTestingLogic(this.page, this.wheelGamePage).calibrateNormalSpeed();
+    const startTime = Date.now();
+    await this.wheelGamePage.spin();
+    await this.wheelGamePage.state.waitForSpinComplete();
+    this.normalSpinBaseline = Date.now() - startTime;
     this.spinStartTime = undefined;
   }
 );
@@ -75,7 +80,10 @@ When(
 When(
   "the player clicks the spin button to calibrate quick speed",
   async function (this: CustomWorld) {
-    this.quickSpinBaseline = await new SpinTestingLogic(this.page, this.wheelGamePage).calibrateQuickSpeed();
+    const startTime = Date.now();
+    await this.wheelGamePage.spin();
+    await this.wheelGamePage.state.waitForSpinComplete();
+    this.quickSpinBaseline = Date.now() - startTime;
     this.spinStartTime = undefined;
   }
 );
