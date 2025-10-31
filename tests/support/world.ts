@@ -1,3 +1,7 @@
+/**
+ * Cucumber World: Shared context object that persists across test steps.
+ * Stores page objects, test logic, and state data for each scenario.
+ */
 import { World, IWorldOptions, setWorldConstructor } from "@cucumber/cucumber";
 import { Page } from "@playwright/test";
 import { WheelGamePage } from "../../pages/WheelGamePage";
@@ -25,12 +29,10 @@ export interface CustomWorld extends World {
   autoplayLogic: AutoplayTestingLogic;
   initialBalance?: number;
   balanceBeforeSpin?: number;
-  balanceAfterFirstSpin?: number;
   multiplierTestResults?: MultiplierTestResult[];
   spinStartTime?: number;
   normalSpinBaseline?: number;
   quickSpinBaseline?: number;
-  testError?: Error; // Store non-critical errors to allow continuation
   targetSliceIndex?: number; // Target slice for next spin (set by test hooks)
 }
 
@@ -41,12 +43,10 @@ export class CustomWorldImpl extends World implements CustomWorld {
   autoplayLogic!: AutoplayTestingLogic;
   initialBalance?: number;
   balanceBeforeSpin?: number;
-  balanceAfterFirstSpin?: number;
   multiplierTestResults?: MultiplierTestResult[];
   spinStartTime?: number;
   normalSpinBaseline?: number;
   quickSpinBaseline?: number;
-  testError?: Error;
   targetSliceIndex?: number;
 
   constructor(options: IWorldOptions) {

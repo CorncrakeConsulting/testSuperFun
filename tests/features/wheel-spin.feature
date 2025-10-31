@@ -7,6 +7,10 @@ Feature: Spinning the Wheel
     Given the game is loaded
     And the player has a balance of 1000
 
+  Scenario: Wheel starts at initial position
+    Then the wheel should be at position 10
+    And the wheel should be in idle state
+
   Scenario: Successfully spin the wheel
     Given the player has placed a bet of 50
     And the wheel is set to land on slice 3
